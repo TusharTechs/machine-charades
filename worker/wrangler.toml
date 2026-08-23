@@ -1,0 +1,28 @@
+name = "machine-charades-guess"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+
+# Preview URLs give every deployment version its own public URL. Off until
+# verifyPlayer() does real JWT verification — no reason to widen public surface.
+preview_urls = false
+
+# Free tier: 100,000 requests/day. For a launch-week game that is enormous —
+# and every cache hit costs you nothing at all.
+
+[vars]
+FIREBASE_PROJECT_ID = "machine-charades"
+# ALLOW_UNVERIFIED = "1"   # dev only. NEVER set this in production.
+
+# KV namespaces. Create them first, then paste the ids Wrangler prints:
+#   npx wrangler kv namespace create CACHE
+#   npx wrangler kv namespace create PUZZLES
+[[kv_namespaces]]
+binding = "CACHE"
+id = "bf6c2b992ec043558527a73a4e3e862a"
+
+[[kv_namespaces]]
+binding = "PUZZLES"
+id = "26b8751fe6764879ad0f2218442e6e6b"
+
+# The API key is a SECRET, not a var. It must never appear in this file:
+#   npx wrangler secret put GEMINI_API_KEY

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+build/
+.gradle/
+local.properties
+.DS_Store
+tools/out/
+.idea/
+xcuserdata/
+
+# Wrangler local secrets — never commit
+.dev.vars
+.dev.vars.*

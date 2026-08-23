@@ -1,0 +1,292 @@
+{
+  "_comment": "Shared test vectors for the clue validator. The Kotlin client and the TypeScript Worker must agree on every one of these. If you change validation logic, change it in both places and re-run both test suites.",
+  "puzzle": {
+    "n": 1,
+    "date": "2026-09-24",
+    "word": "giraffe",
+    "banned": [
+      "neck",
+      "tall",
+      "africa",
+      "zoo",
+      "spots"
+    ],
+    "cat": "animal",
+    "diff": 2,
+    "allow": [
+      "tally"
+    ]
+  },
+  "cases": [
+    {
+      "clue": "long-necked savanna browser",
+      "expect": "CONTAINS_BANNED_WORD",
+      "token": "necked",
+      "why": "stem of a banned word"
+    },
+    {
+      "clue": "the tallest land mammal",
+      "expect": "CONTAINS_BANNED_WORD",
+      "token": "tallest",
+      "why": "inflection of a banned word"
+    },
+    {
+      "clue": "giraffe",
+      "expect": "CONTAINS_SECRET_WORD",
+      "token": "giraffe",
+      "why": "the word itself"
+    },
+    {
+      "clue": "Giraffes.",
+      "expect": "CONTAINS_SECRET_WORD",
+      "token": "giraffes",
+      "why": "plural plus punctuation and case"
+    },
+    {
+      "clue": "g1raffe",
+      "expect": "CONTAINS_SECRET_WORD",
+      "token": "giraffe",
+      "why": "leet substitution"
+    },
+    {
+      "clue": "g i r a f f e",
+      "expect": "CONTAINS_SECRET_WORD",
+      "token": "giraffe",
+      "why": "spelled out across tokens"
+    },
+    {
+      "clue": "giraaaaffe",
+      "expect": "CONTAINS_SECRET_WORD",
+      "token": "giraaaaffe",
+      "why": "repeated letters - blame the token, not the secret word"
+    },
+    {
+      "clue": "supergiraffey",
+      "expect": "CONTAINS_SECRET_WORD",
+      "token": "supergiraffey",
+      "why": "embedded in a longer token"
+    },
+    {
+      "clue": "AFRICAN plains",
+      "expect": "CONTAINS_BANNED_WORD",
+      "token": "african",
+      "why": "banned word, uppercase, inflected"
+    },
+    {
+      "clue": "zoos everywhere",
+      "expect": "CONTAINS_BANNED_WORD",
+      "token": "zoos",
+      "why": "banned word pluralised"
+    },
+    {
+      "clue": "yellow patchwork, absurd reach",
+      "expect": null,
+      "why": "legal - avoids every blocked route"
+    },
+    {
+      "clue": "eats treetops",
+      "expect": null,
+      "why": "legal and short"
+    },
+    {
+      "clue": "the police were nice",
+      "expect": null,
+      "why": "no false positive from short substrings"
+    },
+    {
+      "clue": "spotted?",
+      "expect": "CONTAINS_BANNED_WORD",
+      "token": "spotted",
+      "why": "stem of banned word spots"
+    },
+    {
+      "clue": "",
+      "expect": "EMPTY",
+      "why": "empty clue"
+    },
+    {
+      "clue": "   ",
+      "expect": "EMPTY",
+      "why": "whitespace only"
+    },
+    {
+      "clue": "brwn ptchwrk",
+      "mode": "NO_VOWELS",
+      "expect": null,
+      "why": "legal under no-vowels"
+    },
+    {
+      "clue": "brown patchwork",
+      "mode": "NO_VOWELS",
+      "expect": "VOWEL_USED",
+      "token": "o",
+      "why": "vowel present"
+    },
+    {
+      "clue": "treetops",
+      "mode": "ONE_WORD",
+      "expect": null,
+      "why": "single token"
+    },
+    {
+      "clue": "eats treetops",
+      "mode": "ONE_WORD",
+      "expect": "MORE_THAN_ONE_WORD",
+      "why": "two tokens"
+    },
+    {
+      "clue": "yellow patchwork reach",
+      "mode": "TWENTY_CHAR_CAP",
+      "expect": "OVER_CHAR_CAP",
+      "why": "22 chars, over the cap"
+    },
+    {
+      "clue": "patchwork reacher",
+      "mode": "TWENTY_CHAR_CAP",
+      "expect": null,
+      "why": "17 chars, under the cap"
+    },
+    {
+      "clue": "tallow candle",
+      "expect": null,
+      "why": "FP regression: banned 'tall' is 4 chars, below the containment floor"
+    },
+    {
+      "clue": "a necklace",
+      "expect": null,
+      "why": "FP regression: banned 'neck' is 4 chars, below the containment floor"
+    },
+    {
+      "clue": "tally the votes",
+      "expect": null,
+      "why": "allow list overrides the -y variant rule"
+    },
+    {
+      "clue": "zoology degree",
+      "expect": null,
+      "why": "FP regression: 'zoo' skeletonises to 'zo', too short to contain-match"
+    }
+  ],
+  "scoring": [
+    {
+      "solved": true,
+      "guesses": 1,
+      "chars": 20,
+      "score": 1200,
+      "why": "short first-try - the best outcome"
+    },
+    {
+      "solved": true,
+      "guesses": 1,
+      "chars": 55,
+      "score": 1025,
+      "why": "long first-try still beats a short second-try"
+    },
+    {
+      "solved": true,
+      "guesses": 2,
+      "chars": 20,
+      "score": 800,
+      "why": "short second-try"
+    },
+    {
+      "solved": true,
+      "guesses": 1,
+      "chars": 60,
+      "score": 1000,
+      "why": "exactly at the allowance, no bonus"
+    },
+    {
+      "solved": true,
+      "guesses": 1,
+      "chars": 90,
+      "score": 1000,
+      "why": "bonus floors at zero, never negative"
+    },
+    {
+      "solved": true,
+      "guesses": 3,
+      "chars": 30,
+      "score": 500,
+      "why": "third-try with a short clue"
+    },
+    {
+      "solved": false,
+      "guesses": 3,
+      "chars": 12,
+      "score": 0,
+      "why": "unsolved scores nothing regardless of brevity"
+    }
+  ],
+  "fpPuzzle": {
+    "n": 2,
+    "date": "2026-09-25",
+    "word": "lighthouse",
+    "banned": [
+      "light",
+      "coast",
+      "beam",
+      "warn",
+      "sting"
+    ],
+    "allow": [
+      "blasting"
+    ]
+  },
+  "fpCases": [
+    {
+      "clue": "delight",
+      "expect": null,
+      "why": "suffix match, 2-char remainder - a coincidence, not a compound"
+    },
+    {
+      "clue": "flight path",
+      "expect": null,
+      "why": "suffix match, 1-char remainder"
+    },
+    {
+      "clue": "a slight breeze",
+      "expect": null,
+      "why": "suffix match, 1-char remainder"
+    },
+    {
+      "clue": "casting call",
+      "expect": null,
+      "why": "'sting' inside 'ca|sting' - the bug that started this"
+    },
+    {
+      "clue": "lasting",
+      "expect": null,
+      "why": "same shape as casting"
+    },
+    {
+      "clue": "blasting",
+      "expect": null,
+      "why": "3-char remainder would block, but the allow list overrides"
+    },
+    {
+      "clue": "spotlight",
+      "expect": "CONTAINS_BANNED_WORD",
+      "token": "spotlight",
+      "why": "suffix match, 4-char remainder - a real light"
+    },
+    {
+      "clue": "lighting",
+      "expect": "CONTAINS_BANNED_WORD",
+      "token": "lighting",
+      "why": "variant of a banned word"
+    },
+    {
+      "clue": "coastal town",
+      "expect": "CONTAINS_BANNED_WORD",
+      "token": "coastal",
+      "why": "prefix match, real derivation"
+    },
+    {
+      "clue": "stinging",
+      "expect": "CONTAINS_BANNED_WORD",
+      "token": "stinging",
+      "why": "variant of a banned word"
+    }
+  ]
+}
