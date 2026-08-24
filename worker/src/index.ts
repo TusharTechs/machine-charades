@@ -82,19 +82,80 @@ const json = (body: unknown, status = 200) =>
     headers: { 'content-type': 'application/json; charset=utf-8' },
   });
 
+/** UTC, deliberately: the day boundary is the same for every player. */
+export const utcDay = (now: Date = new Date()): string =>
+  now.toISOString().slice(0, 10);
+
+/**
+ * Today's puzzle, and only today's.
+ *
+ * The client needs `word` — the player writes a clue *for* it — plus `banned`
+ * and `allow`, so the local validator can reject a clue as it is typed without
+ * a round trip. That is the same data the server holds; nothing is withheld,
+ * because the player is meant to see it.
+ *
+ * What IS withheld is every other day. Serving `puzzle:<n>` for an arbitrary n
+ * would let anyone read the whole season ahead, and a daily game where the
+ * answers are knowable in advance has no game left. So the puzzle number is
+ * resolved from the date index server-side and never taken from the request.
+ */
+export async function handleToday(env: Env, url: URL): Promise<Response> {
+  // Dev-only escape hatch. The schedule starts on launch day, so before then
+  // there is no puzzle for "today" and the app cannot be exercised at all.
+  // Gated on ALLOW_UNVERIFIED, which is never set on a deployed Worker — the
+  // same flag that already means "this is not production". Tested inert
+  // without it, because this is exactly the override that must not ship.
+  if (env.ALLOW_UNVERIFIED === '1') {
+    const forced = url.searchParams.get('n');
+    if (forced !== null && /^[0-9]+$/.test(forced)) {
+      const raw = await env.PUZZLES.get(`puzzle:${forced}`);
+      return raw === null
+        ? json({ error: 'unknown_puzzle' }, 404)
+        : new Response(raw, { headers: { 'content-type': 'application/json; charset=utf-8' } });
+    }
+  }
+
+  const indexRaw = await env.PUZZLES.get('index:by-date');
+  if (indexRaw === null) return json({ error: 'no_index' }, 503);
+
+  const today = utcDay();
+  const number = (JSON.parse(indexRaw) as Record<string, number>)[today];
+  // Ran out of scheduled puzzles — generate more rather than letting the game
+  // silently end. Distinct from an error so the client can say so.
+  if (typeof number !== 'number') return json({ error: 'no_puzzle_today', date: today }, 404);
+
+  const puzzleRaw = await env.PUZZLES.get(`puzzle:${number}`);
+  if (puzzleRaw === null) return json({ error: 'unknown_puzzle' }, 404);
+
+  return new Response(puzzleRaw, {
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      // Same answer for everyone all day, so let the edge serve it. Short
+      // enough that a fresh puzzle appears promptly after the UTC rollover.
+      'cache-control': 'public, max-age=300',
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
-
     const url = new URL(request.url);
-    if (url.pathname !== '/guess') return json({ error: 'not_found' }, 404);
 
-    // --- identity -----------------------------------------------------------
+    // Every route needs a verified player. Doing this before the method check
+    // means an unauthenticated caller learns nothing about which routes exist.
     const playerId = await verifyPlayer(request, env);
     if (playerId === null) return json({ error: 'unauthenticated' }, 401);
 
+    if (url.pathname === '/puzzle/today') {
+      if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+      return handleToday(env, url);
+    }
+
+    if (url.pathname !== '/guess') return json({ error: 'not_found' }, 404);
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+
     // --- rate limit ---------------------------------------------------------
-    const day = new Date().toISOString().slice(0, 10);
+    const day = utcDay();
     const rlKey = `rl:${day}:${playerId}`;
     const used = Number((await env.CACHE.get(rlKey)) ?? '0');
     if (used >= DAILY_CALL_LIMIT) {
