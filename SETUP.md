@@ -11,12 +11,18 @@ Google Play and the Galaxy Store by **23 September 2026**.
 
 ## What's in here, and what state it's in
 
+One repo, deliberately: the Worker and the client that calls it version
+together, and there is exactly one copy of the validator.
+
 | Path | State |
 |---|---|
-| `worker/` | **Verified.** Typechecks clean, 46/46 tests pass. |
+| `worker/` | **Verified.** 70 tests pass. Deployed and serving. |
 | `tools/` | **Verified.** Generates and validates 40 days of puzzles. |
-| `shared/src/commonMain/kotlin/` | **Verified.** Compiles for Android and iOS. |
-| `shared/src/commonTest/kotlin/` | **Verified.** 27 tests × 2 targets, all pass. |
+| `shared/` | **Verified.** The KMP module: validator, scoring, API client, UI. |
+| `androidApp/`, `iosApp/` | **Verified.** Both run and show today's puzzle. |
+
+The Gradle project sits at the repo root, so `./gradlew` works from here;
+`worker/` and `tools/` are Node and are not Gradle modules.
 
 ✅ **The Kotlin now compiles and passes.** Ported into a generated shell and run
 on 23 Aug 2026: `./gradlew :shared:allTests` is green — 27 tests on

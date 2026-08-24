@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEBUG ONLY. Lives in src/debug, so it is absent from every release build.
+
+  On a network with a TLS-intercepting proxy (Netskope here), the emulator's
+  trust store has no copy of the corporate CA, so every HTTPS call fails with
+  "Trust anchor for certification path not found". That surfaces confusingly:
+  OkHttp reports the last route it tried, so the visible error was an IPv6
+  ConnectException while the real failure was a TLS handshake on IPv4.
+
+  Trusting the proxy CA *in addition to* the system anchors makes the emulator
+  behave like the host, which already trusts it. Nothing here weakens release
+  builds, and on a normal network this file is simply unnecessary.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+            <certificates src="@raw/corp_proxy_ca"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

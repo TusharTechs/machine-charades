@@ -1,13 +1,35 @@
-node_modules/
-dist/
+# --- build output ---
 build/
+**/build/
+!src/**/build/
+dist/
 .gradle/
-local.properties
-.DS_Store
+.kotlin/
+node_modules/
 tools/out/
-.idea/
-xcuserdata/
 
-# Wrangler local secrets — never commit
+# --- local machine config, never committed ---
+# local.properties carries sdk.dir plus worker.url and the Firebase Web API key.
+local.properties
+# Wrangler local secrets (GEMINI_API_KEY for `wrangler dev`).
 .dev.vars
 .dev.vars.*
+
+# --- IDE / editor ---
+.idea/
+*.iml
+.DS_Store
+
+# --- Xcode: keep the project, drop per-user state ---
+xcuserdata
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+# --- Android native build leftovers ---
+captures
+.externalNativeBuild
+.cxx
