@@ -166,6 +166,46 @@ Maven Central, Google Maven, the Gradle plugin portal, `api.foojay.io` and the
 Kotlin/Native toolchain CDN are all reachable once the CA is imported. Only
 GitHub asset hosts are blocked.
 
+4. **Every device trust store needs the CA too, and each one differently.**
+   The proxy re-signs TLS for the emulator and simulator as well, and neither
+   inherits the Mac's trust. Symptoms differ and neither names the cause:
+
+   - Android: `SSLHandshakeException: Trust anchor for certification path not
+     found` — but the *visible* error was an IPv6 `ConnectException`, because
+     OkHttp reports the last route it tried and hides the rest in `suppressed`.
+     Fixed in-repo by `androidApp/src/debug/res/xml/network_security_config.xml`,
+     which trusts the CA alongside the system anchors. Being in `src/debug` it
+     cannot reach a release build.
+   - iOS simulator: `NSURLErrorDomain Code=-1200`, which does at least print
+     the chain. Fix per simulator:
+
+     ```
+     xcrun simctl keychain <udid> add-root-cert netskope-root.pem   # the ROOT
+     xcrun simctl keychain <udid> add-cert       netskope-ca.pem    # intermediate
+     ```
+
+   **Get the chain level right — this wasted time twice.** Netskope issues a
+   three-level chain and each level has a different job:
+
+   | Cert | Role | Use for |
+   |---|---|---|
+   | `*.fra2.goskope.com` | self-signed **root** | `add-root-cert`, trust anchors |
+   | `ca.gokwik.goskope.com` | tenant **intermediate** | `add-cert`, JDK truststore |
+   | `eproxy.caadmin.netskope.com` | generic, unrelated | nothing — it is a red herring |
+
+   `add-root-cert` on the intermediate fails with `NSOSStatusErrorDomain -50`,
+   because it is not self-signed and so cannot be an anchor. Extract them with
+   `security find-certificate -a -c "<CN>" -p /Library/Keychains/System.keychain`.
+
+5. **Android also needs IPv4 preferred.** The emulator resolves AAAA records but
+   has no IPv6 route at all (`ping6` 100% loss, IPv4 9ms), so a client that
+   tries AAAA first fails on a working network. `HttpClientFactory.android.kt`
+   sorts IPv4 first rather than dropping IPv6, so an IPv6-only network still
+   works.
+
+6. **`INTERNET` permission is missing from the wizard's manifest.** Without it
+   requests fail at the platform layer, not in Ktor.
+
 Then copy `shared/src/` from this bundle over the generated `shared/src/`.
 
 ## Step 2 — dependencies
