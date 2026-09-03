@@ -86,3 +86,32 @@ android {
         compose = true
     }
 }
+
+
+/**
+ * Refuses to build a release configured with a RevenueCat Test Store key.
+ *
+ * RevenueCat's SDK deliberately crashes on launch in a production build holding
+ * one, and Play rejects submissions that carry it. Both failures land long after
+ * the mistake — a crash for every player, or a rejection days into review — and
+ * local.properties is the same file the debug builds read, so the wrong key is
+ * one forgotten edit away from shipping.
+ */
+val rejectTestStoreKeyInRelease by tasks.registering {
+    val props = Properties()
+    val localProps = rootProject.file("local.properties")
+    if (localProps.exists()) localProps.inputStream().use { props.load(it) }
+    val key = props.getProperty("revenuecat.androidKey", "")
+    inputs.property("revenuecatKey", key)
+    doLast {
+        check(!key.startsWith("test_")) {
+            "\n\nrevenuecat.androidKey in local.properties is a Test Store key " +
+                "(test_…).\nThe RevenueCat SDK crashes on launch in a release build " +
+                "with this key, and Play rejects the submission.\nSwap it for the " +
+                "Google Play public key (goog_…) before building a release.\n"
+        }
+    }
+}
+
+tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }
+    .configureEach { dependsOn(rejectTestStoreKeyInRelease) }
