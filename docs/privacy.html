@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Machine Charades — Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    max-width: 46rem; margin: 0 auto; padding: 2.5rem 1.25rem 5rem;
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1a1d21; background: #fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { color: #e8eaed; background: #0e1116; }
+    h1, h2 { color: #fff; }
+    code { background: #1f242d; }
+  }
+  h1 { font-size: 1.9rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.25rem; }
+  .meta { color: #6b7280; font-size: .9rem; margin-top: 0; }
+  code { background: #f1f3f5; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+  ul { padding-left: 1.25rem; }
+  li { margin: .4rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Privacy Policy — Machine Charades</h1>
+<p class="meta">Last updated: 3 September 2026</p>
+
+<p>
+  Machine Charades is a daily word game published by TechTush Games. You are shown a
+  word and write a clue; a language model then tries to guess the word from your clue.
+  This policy explains exactly what the app collects, why, and who it is shared with.
+</p>
+
+<h2>No account, no personal profile</h2>
+<p>
+  The app does not ask for your name, email address, phone number, date of birth, or
+  photo, and it has no sign-up or login screen. When you first open the app it creates
+  an <strong>anonymous</strong> identity through Firebase Authentication. This produces a
+  random identifier that lets our server tell one player from another so that scores and
+  daily play limits work. It is not linked to your Google account, your email, or any
+  other identity, and it cannot be used to contact you.
+</p>
+
+<h2>What the app collects</h2>
+<ul>
+  <li><strong>The clues you write.</strong> Your clue text is sent to our server so the
+    model can attempt to guess the word.</li>
+  <li><strong>Gameplay data.</strong> The puzzle number, which attempt the model was on,
+    whether it guessed correctly, your score, and how long the round took.</li>
+  <li><strong>Your anonymous identifier</strong> as described above.</li>
+</ul>
+<p>
+  The app does <strong>not</strong> collect your location, contacts, calendar, photos,
+  microphone or camera input, installed-app list, or device advertising identifier.
+</p>
+
+<h2>How your clues are processed</h2>
+<p>
+  Clues are sent over an encrypted connection to our game server, which runs on
+  Cloudflare Workers. The server forwards your clue text to <strong>Google's Gemini
+  API</strong> so the model can produce a guess. Google processes that text under its own
+  terms as an API provider. Please do not type personal or sensitive information into
+  the clue field — a clue only ever needs to be a hint about the day's word.
+</p>
+
+<h2>Purchases</h2>
+<p>
+  If the app offers optional in-app purchases, payment is handled entirely by
+  <strong>Google Play Billing</strong>, and purchase status is managed on our behalf by
+  <strong>RevenueCat</strong>. We never see or store your card number, billing address, or
+  any other payment details. RevenueCat receives an anonymous purchase identifier so the
+  app knows what you have bought.
+</p>
+
+<h2>Third parties we use</h2>
+<ul>
+  <li><strong>Google Firebase Authentication</strong> — anonymous identity only.</li>
+  <li><strong>Cloudflare Workers</strong> — hosts the game server.</li>
+  <li><strong>Google Gemini API</strong> — generates the model's guesses from your clue.</li>
+  <li><strong>Google Play Billing and RevenueCat</strong> — process any in-app purchases.</li>
+</ul>
+<p>We do not sell your data, and we do not share it with advertisers or data brokers.</p>
+
+<h2>Retention and deletion</h2>
+<p>
+  Gameplay records are kept only as long as they are needed to run the game's scores and
+  daily limits. Because the app has no account system, the simplest way to remove your
+  data is to uninstall the app — the anonymous identity is not recoverable afterwards, and
+  the associated records expire. If you would like your data deleted sooner, email the
+  address below and we will remove any records tied to your identifier.
+</p>
+
+<h2>Children</h2>
+<p>
+  Machine Charades is not directed to children under 13, and we do not knowingly collect
+  data from them. If you believe a child has provided us with data, contact us and we
+  will delete it.
+</p>
+
+<h2>Security</h2>
+<p>
+  All traffic between the app and our server uses HTTPS. Server-side secrets are stored
+  as encrypted environment secrets and are never shipped inside the app.
+</p>
+
+<h2>Changes</h2>
+<p>
+  If this policy changes materially, the date at the top of this page will be updated and
+  the new version will be published here before the change takes effect.
+</p>
+
+<h2>Contact</h2>
+<p>
+  Questions or deletion requests: <a href="mailto:tusharaggarwal274@gmail.com">tusharaggarwal274@gmail.com</a>
+</p>
+
+</body>
+</html>
