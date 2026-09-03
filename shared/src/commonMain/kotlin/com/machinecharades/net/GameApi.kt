@@ -32,6 +32,15 @@ private data class GuessRequest(
     @SerialName("puzzleNumber") val puzzleNumber: Int,
     @SerialName("clue") val clue: String,
     @SerialName("attempt") val attempt: Int,
+    /**
+     * What the machine has already said and got wrong.
+     *
+     * The Worker's prompt has always had a "do not repeat them" line keyed on
+     * this, but nothing ever sent it, so the field was empty on every call and
+     * the instruction never fired. The machine could — and on a hard puzzle
+     * did — return the same wrong word three times.
+     */
+    @SerialName("previousGuesses") val previousGuesses: List<String> = emptyList(),
 )
 
 /** A failure worth showing the player, rather than a stack trace. */
@@ -78,13 +87,18 @@ class GameApi(
         }.body()
     }
 
-    suspend fun guess(puzzleNumber: Int, clue: String, attempt: Int): GuessResponse {
+    suspend fun guess(
+        puzzleNumber: Int,
+        clue: String,
+        attempt: Int,
+        previousGuesses: List<String> = emptyList(),
+    ): GuessResponse {
         requireConfigured()
         return authorized { token ->
             http.post("$baseUrl/guess") {
                 header("authorization", "Bearer $token")
                 contentType(ContentType.Application.Json)
-                setBody(GuessRequest(puzzleNumber, clue, attempt))
+                setBody(GuessRequest(puzzleNumber, clue, attempt, previousGuesses))
             }
         }.body()
     }
