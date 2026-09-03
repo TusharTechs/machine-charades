@@ -24,10 +24,19 @@ object Scoring {
     fun score(solved: Boolean, guessesUsed: Int, clueChars: Int): Int {
         if (!solved) return 0
         val idx = (guessesUsed - 1).coerceIn(0, guessBase.lastIndex)
-        val base = guessBase[idx]
-        val bonus = ((CHAR_ALLOWANCE - clueChars).coerceAtLeast(0)) * CHAR_BONUS_PER
-        return base + bonus
+        return guessBase[idx] + brevityBonus(clueChars)
     }
+
+    /**
+     * The part of the score that comes from brevity alone.
+     *
+     * Public because the clue field shows it while you type. Finding the
+     * shortest clue that still lands is the actual skill of the game, and a
+     * player who only meets this number on the results screen has already
+     * finished the round without knowing what they were optimising for.
+     */
+    fun brevityBonus(clueChars: Int): Int =
+        ((CHAR_ALLOWANCE - clueChars).coerceAtLeast(0)) * CHAR_BONUS_PER
 
     /**
      * Wordcraft rating update. Elo against the day's field: [fieldMeanScore] is
