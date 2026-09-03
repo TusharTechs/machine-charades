@@ -11,6 +11,18 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+/**
+ * This machine's Swift runtime for the simulator.
+ *
+ * RevenueCat's iOS SDK is Swift, and the klib it publishes carries a linker
+ * search path from the machine it was built on (/Applications/Xcode-16.4.app),
+ * which exists nowhere else. The app framework links anyway; the test
+ * executable does not, and fails on Swift type metadata with no useful message.
+ */
+val swiftSimulatorLibs = providers.exec { commandLine("xcode-select", "-p") }
+    .standardOutput.asText
+    .map { it.trim() + "/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator" }
+
 kotlin {
     listOf(
         iosArm64(),
@@ -20,6 +32,10 @@ kotlin {
             baseName = "Shared"
             isStatic = true
         }
+        iosTarget.binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable>()
+            .configureEach {
+                linkerOpts("-L${swiftSimulatorLibs.get()}")
+            }
     }
 
     android {
@@ -44,6 +60,14 @@ kotlin {
     }
 
     sourceSets {
+        // purchases-kmp reaches StoreKit through cinterop, so the iOS source
+        // sets have to opt in explicitly or they will not compile.
+        named { it.lowercase().startsWith("ios") }.configureEach {
+            languageSettings {
+                optIn("kotlinx.cinterop.ExperimentalForeignApi")
+            }
+        }
+
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.ktor.client.okhttp)
@@ -52,6 +76,7 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
+            implementation(libs.purchases.core)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -101,6 +126,13 @@ val generateBuildConfig by tasks.registering {
     val workerUrl = props.getProperty("worker.url", "")
     val firebaseKey = props.getProperty("firebase.webApiKey", "")
     val devPuzzle = props.getProperty("dev.puzzleNumber", "")
+    // RevenueCat publishes one public SDK key per store. Both ship inside the
+    // binary by design — they identify the app and authorise nothing — but they
+    // stay out of the repo like the Firebase one.
+    val rcAndroid = props.getProperty("revenuecat.androidKey", "")
+    val rcIos = props.getProperty("revenuecat.iosKey", "")
+    inputs.property("rcAndroid", rcAndroid)
+    inputs.property("rcIos", rcIos)
     inputs.property("workerUrl", workerUrl)
     inputs.property("firebaseKey", firebaseKey)
     inputs.property("devPuzzle", devPuzzle)
@@ -119,6 +151,8 @@ val generateBuildConfig by tasks.registering {
                 const val FIREBASE_WEB_API_KEY: String = "$firebaseKey"
                 /** Dev only: force a puzzle number before the schedule starts. */
                 const val DEV_PUZZLE_NUMBER: String = "$devPuzzle"
+                const val REVENUECAT_ANDROID_KEY: String = "$rcAndroid"
+                const val REVENUECAT_IOS_KEY: String = "$rcIos"
             }
             """.trimIndent() + "\n"
         )

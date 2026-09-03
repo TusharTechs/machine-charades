@@ -1,6 +1,7 @@
 package com.machinecharades.net
 
 import com.machinecharades.config.BuildConfig
+import com.machinecharades.core.ConstraintMode
 import com.machinecharades.core.DailyPuzzle
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -41,7 +42,26 @@ private data class GuessRequest(
      * did — return the same wrong word three times.
      */
     @SerialName("previousGuesses") val previousGuesses: List<String> = emptyList(),
+    @SerialName("mode") val mode: String = "NONE",
 )
+
+/**
+ * The Worker's spelling of a constraint mode.
+ *
+ * Deliberately not ConstraintMode's own @SerialName. Those are the *storage*
+ * format — locked by WireFormatTest because renaming one invalidates every
+ * stored round that used it — and they are lower snake case ("cap20"), while
+ * the Worker's union type is upper ("TWENTY_CHAR_CAP"). Sending the storage
+ * spelling is not a loud failure: the Worker's `body.mode ?? 'NONE'` accepts
+ * the string, matches no case, and silently enforces no constraint at all, so
+ * the client would reject a clue the server would have allowed.
+ */
+internal fun ConstraintMode.wireName(): String = when (this) {
+    ConstraintMode.NONE -> "NONE"
+    ConstraintMode.NO_VOWELS -> "NO_VOWELS"
+    ConstraintMode.ONE_WORD -> "ONE_WORD"
+    ConstraintMode.TWENTY_CHAR_CAP -> "TWENTY_CHAR_CAP"
+}
 
 /** A failure worth showing the player, rather than a stack trace. */
 sealed class ApiError(val display: String) {
@@ -92,13 +112,16 @@ class GameApi(
         clue: String,
         attempt: Int,
         previousGuesses: List<String> = emptyList(),
+        mode: ConstraintMode = ConstraintMode.NONE,
     ): GuessResponse {
         requireConfigured()
         return authorized { token ->
             http.post("$baseUrl/guess") {
                 header("authorization", "Bearer $token")
                 contentType(ContentType.Application.Json)
-                setBody(GuessRequest(puzzleNumber, clue, attempt, previousGuesses))
+                setBody(
+                    GuessRequest(puzzleNumber, clue, attempt, previousGuesses, mode.wireName()),
+                )
             }
         }.body()
     }

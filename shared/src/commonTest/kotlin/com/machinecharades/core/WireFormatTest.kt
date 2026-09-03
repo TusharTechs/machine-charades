@@ -2,6 +2,7 @@ package com.machinecharades.core
 
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
+import com.machinecharades.net.wireName
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -150,4 +151,33 @@ class WireFormatTest {
         serializer: kotlinx.serialization.KSerializer<T>,
         value: T,
     ): T = json.decodeFromString(serializer, json.encodeToString(serializer, value))
+}
+
+/**
+ * The Worker's union type is `'NONE' | 'NO_VOWELS' | 'ONE_WORD' | 'TWENTY_CHAR_CAP'`
+ * (worker/src/validator.ts). These names are a separate contract from the
+ * @SerialName values above, which are storage, and the two must not be merged.
+ */
+class ConstraintModeWireTest {
+
+    @Test
+    fun every_mode_maps_to_the_workers_own_spelling() {
+        assertEquals("NONE", ConstraintMode.NONE.wireName())
+        assertEquals("NO_VOWELS", ConstraintMode.NO_VOWELS.wireName())
+        assertEquals("ONE_WORD", ConstraintMode.ONE_WORD.wireName())
+        assertEquals("TWENTY_CHAR_CAP", ConstraintMode.TWENTY_CHAR_CAP.wireName())
+    }
+
+    @Test
+    fun no_mode_sends_its_storage_name_by_accident() {
+        // A storage name reaching the Worker matches no case and silently
+        // disables the constraint, so the two vocabularies must stay disjoint.
+        val storage = setOf("none", "no_vowels", "one_word", "cap20")
+        ConstraintMode.entries.forEach { mode ->
+            assertTrue(
+                mode.wireName() !in storage,
+                "${mode.name} is sending its storage spelling to the Worker",
+            )
+        }
+    }
 }

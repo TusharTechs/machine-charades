@@ -3,6 +3,7 @@ package com.machinecharades
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,13 +25,16 @@ import com.machinecharades.core.MAX_GUESSES
 import com.machinecharades.core.MachineGuess
 import com.machinecharades.core.RoundResult
 import com.machinecharades.core.Scoring
+import com.machinecharades.data.Plan
 import com.machinecharades.data.PlayerStats
 import com.machinecharades.data.PlayerStore
+import com.machinecharades.data.Plus
 import com.machinecharades.data.asResult
 import com.machinecharades.net.ApiException
 import com.machinecharades.net.GameApi
 import com.machinecharades.net.redactSecrets
 import com.machinecharades.ui.MachineCharadesTheme
+import com.machinecharades.ui.Paywall
 import com.machinecharades.ui.MachineGreen
 import com.machinecharades.ui.MissRed
 import kotlinx.coroutines.delay
@@ -66,6 +70,28 @@ fun App(
         var stats by remember { mutableStateOf(PlayerStats()) }
         var reloads by remember { mutableIntStateOf(0) }
 
+        var plus by remember { mutableStateOf(false) }
+        var paywallOpen by remember { mutableStateOf(false) }
+        var plans by remember { mutableStateOf<List<Plan>>(emptyList()) }
+        var busy by remember { mutableStateOf(false) }
+        var buyError by remember { mutableStateOf<String?>(null) }
+        val scope = rememberCoroutineScope()
+
+        LaunchedEffect(Unit) {
+            Plus.start()
+            plus = Plus.isActive()
+        }
+
+        // Offerings are fetched when the paywall first opens, not at launch —
+        // most players never see it, and it is a network call.
+        LaunchedEffect(paywallOpen) {
+            if (paywallOpen && plans.isEmpty()) {
+                busy = true
+                plans = Plus.plans()
+                busy = false
+            }
+        }
+
         LaunchedEffect(reloads) {
             screen = Screen.Loading
             // Read before the network call: a returning player should see their
@@ -88,9 +114,45 @@ fun App(
                 when (val s = screen) {
                     Screen.Loading -> CircularProgressIndicator()
                     is Screen.Failed -> Failure(s.message) { reloads++ }
-                    is Screen.Playing -> Round(s.puzzle, api, stats) { finished ->
+                    is Screen.Playing -> Round(
+                        puzzle = s.puzzle,
+                        api = api,
+                        stats = stats,
+                        plus = plus,
+                        onWantPlus = { paywallOpen = true },
+                    ) { finished ->
                         stats = stats.recording(finished).also(store::save)
                     }
+                }
+
+                if (paywallOpen) {
+                    Paywall(
+                        plans = plans,
+                        busy = busy,
+                        error = buyError,
+                        onBuy = { plan ->
+                            scope.launch {
+                                busy = true; buyError = null
+                                val bought = Plus.buy(plan.id)
+                                busy = false
+                                if (bought) { plus = true; paywallOpen = false }
+                                // A cancelled purchase lands here too, which is
+                                // why this says nothing about what went wrong —
+                                // most of the time nothing did.
+                                else buyError = "That didn't go through. You have not been charged."
+                            }
+                        },
+                        onRestore = {
+                            scope.launch {
+                                busy = true; buyError = null
+                                val restored = Plus.restore()
+                                busy = false
+                                if (restored) { plus = true; paywallOpen = false }
+                                else buyError = "No purchase found on this account."
+                            }
+                        },
+                        onDismiss = { paywallOpen = false; buyError = null },
+                    )
                 }
             }
         }
@@ -142,6 +204,8 @@ private fun Round(
     puzzle: DailyPuzzle,
     api: GameApi,
     stats: PlayerStats,
+    plus: Boolean,
+    onWantPlus: () -> Unit,
     onFinished: (RoundResult) -> Unit,
 ) {
     // Today may already be behind us. Reopening the app has to show what you
@@ -156,11 +220,12 @@ private fun Round(
     }
     var guesses by remember { mutableStateOf(alreadyPlayed?.guesses ?: emptyList()) }
     var submitError by remember { mutableStateOf<String?>(null) }
+    var mode by remember { mutableStateOf(ConstraintMode.NONE) }
 
     val scope = rememberCoroutineScope()
     val started = remember { TimeSource.Monotonic.markNow() }
-    val rejection = remember(clue) {
-        if (clue.isBlank()) null else ClueValidator.validate(clue, puzzle, ConstraintMode.NONE)
+    val rejection = remember(clue, mode) {
+        if (clue.isBlank()) null else ClueValidator.validate(clue, puzzle, mode)
     }
 
     fun send() {
@@ -181,6 +246,7 @@ private fun Round(
                         clue = submitted,
                         attempt = attempt,
                         previousGuesses = guesses.map { it.guess },
+                        mode = mode,
                     )
                     guesses = guesses + MachineGuess(reply.guess, reply.correct, reply.confidence)
                     if (reply.correct) break
@@ -191,7 +257,7 @@ private fun Round(
                     clue = submitted,
                     guesses = guesses,
                     solved = guesses.any { it.correct },
-                    mode = ConstraintMode.NONE,
+                    mode = mode,
                     elapsedMs = started.elapsedNow().inWholeMilliseconds,
                 )
                 phase = Phase.Done(result)
@@ -248,6 +314,15 @@ private fun Round(
         }
 
         BannedRow(puzzle.banned)
+
+        if (phase is Phase.Writing) {
+            ModeRow(
+                selected = mode,
+                plus = plus,
+                onSelect = { mode = it },
+                onLocked = onWantPlus,
+            )
+        }
 
         when (val p = phase) {
             Phase.Writing -> ClueEntry(
@@ -488,6 +563,66 @@ private fun ResultCard(result: RoundResult) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/**
+ * The difficulty picker.
+ *
+ * Standard is always free. The three constraint modes are what Plus sells, and
+ * they cost nothing to offer: ClueValidator already enforces all of them and
+ * the Worker already re-checks them, so this row is the only part that was
+ * ever missing.
+ *
+ * In a build with no store key the locked modes are hidden rather than shown
+ * as locks — a padlock that opens an empty paywall reads as broken software.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ModeRow(
+    selected: ConstraintMode,
+    plus: Boolean,
+    onSelect: (ConstraintMode) -> Unit,
+    onLocked: () -> Unit,
+) {
+    val offered = if (plus || Plus.isConfigured) {
+        ConstraintMode.entries
+    } else {
+        listOf(ConstraintMode.NONE)
+    }
+    if (offered.size == 1) return
+
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        offered.forEach { candidate ->
+            val locked = candidate != ConstraintMode.NONE && !plus
+            val active = candidate == selected
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = when {
+                    active -> MachineGreen
+                    else -> MaterialTheme.colorScheme.surfaceVariant
+                },
+                modifier = Modifier.clickable {
+                    if (locked) onLocked() else onSelect(candidate)
+                },
+            ) {
+                Text(
+                    if (locked) "\uD83D\uDD12 " + Scoring.modeLabel(candidate)
+                    else Scoring.modeLabel(candidate),
+                    Modifier.padding(horizontal = 13.dp, vertical = 7.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = when {
+                        active -> MaterialTheme.colorScheme.onPrimary
+                        locked -> MaterialTheme.colorScheme.onSurfaceVariant
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
+                )
+            }
         }
     }
 }
