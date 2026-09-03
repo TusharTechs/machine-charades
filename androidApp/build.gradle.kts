@@ -36,7 +36,11 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.machinecharades"
+        // Store identity, permanent once the first bundle is uploaded. Namespaced
+        // under the publisher rather than the game so later apps sit beside it.
+        // Deliberately not the same as `namespace` above: that one only names the
+        // generated R class, and changing it would move every source file.
+        applicationId = "com.techtush.machinecharades"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         // Play rejects a bundle whose versionCode it has already seen, and a
