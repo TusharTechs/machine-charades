@@ -24,6 +24,9 @@ import com.machinecharades.core.MAX_GUESSES
 import com.machinecharades.core.MachineGuess
 import com.machinecharades.core.RoundResult
 import com.machinecharades.core.Scoring
+import com.machinecharades.data.PlayerStats
+import com.machinecharades.data.PlayerStore
+import com.machinecharades.data.asResult
 import com.machinecharades.net.ApiException
 import com.machinecharades.net.GameApi
 import com.machinecharades.net.redactSecrets
@@ -54,13 +57,20 @@ private sealed interface Phase {
 }
 
 @Composable
-fun App(api: GameApi = remember { GameApi() }) {
+fun App(
+    api: GameApi = remember { GameApi() },
+    store: PlayerStore = remember { PlayerStore() },
+) {
     MachineCharadesTheme {
         var screen by remember { mutableStateOf<Screen>(Screen.Loading) }
+        var stats by remember { mutableStateOf(PlayerStats()) }
         var reloads by remember { mutableIntStateOf(0) }
 
         LaunchedEffect(reloads) {
             screen = Screen.Loading
+            // Read before the network call: a returning player should see their
+            // streak on the same frame as the puzzle, not a beat later.
+            stats = store.load()
             screen = try {
                 Screen.Playing(api.today())
             } catch (e: ApiException) {
@@ -78,7 +88,9 @@ fun App(api: GameApi = remember { GameApi() }) {
                 when (val s = screen) {
                     Screen.Loading -> CircularProgressIndicator()
                     is Screen.Failed -> Failure(s.message) { reloads++ }
-                    is Screen.Playing -> Round(s.puzzle, api)
+                    is Screen.Playing -> Round(s.puzzle, api, stats) { finished ->
+                        stats = stats.recording(finished).also(store::save)
+                    }
                 }
             }
         }
@@ -126,10 +138,23 @@ private fun Failure(message: String, onRetry: () -> Unit) {
  * a patched client cannot be trusted.
  */
 @Composable
-private fun Round(puzzle: DailyPuzzle, api: GameApi) {
-    var clue by remember { mutableStateOf("") }
-    var phase by remember { mutableStateOf<Phase>(Phase.Writing) }
-    var guesses by remember { mutableStateOf<List<MachineGuess>>(emptyList()) }
+private fun Round(
+    puzzle: DailyPuzzle,
+    api: GameApi,
+    stats: PlayerStats,
+    onFinished: (RoundResult) -> Unit,
+) {
+    // Today may already be behind us. Reopening the app has to show what you
+    // scored, not hand you a second attempt at a puzzle you have played.
+    val alreadyPlayed = remember(puzzle.number) { stats.roundFor(puzzle.number) }
+
+    var clue by remember { mutableStateOf(alreadyPlayed?.clue ?: "") }
+    var phase by remember {
+        mutableStateOf<Phase>(
+            alreadyPlayed?.let { Phase.Done(it.asResult()) } ?: Phase.Writing,
+        )
+    }
+    var guesses by remember { mutableStateOf(alreadyPlayed?.guesses ?: emptyList()) }
     var submitError by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
@@ -148,21 +173,29 @@ private fun Round(puzzle: DailyPuzzle, api: GameApi) {
                 // so the machine's thinking arrives as it happens rather than
                 // as a finished list — the pause between attempts is the drama.
                 for (attempt in 1..MAX_GUESSES) {
-                    val reply = api.guess(puzzle.number, submitted, attempt)
+                    // Send what it has already said. Without this the Worker's
+                    // "do not repeat them" line has nothing to work with and the
+                    // machine can return the same wrong word three times.
+                    val reply = api.guess(
+                        puzzleNumber = puzzle.number,
+                        clue = submitted,
+                        attempt = attempt,
+                        previousGuesses = guesses.map { it.guess },
+                    )
                     guesses = guesses + MachineGuess(reply.guess, reply.correct, reply.confidence)
                     if (reply.correct) break
                     if (attempt < MAX_GUESSES) delay(700)
                 }
-                phase = Phase.Done(
-                    RoundResult(
-                        puzzleNumber = puzzle.number,
-                        clue = submitted,
-                        guesses = guesses,
-                        solved = guesses.any { it.correct },
-                        mode = ConstraintMode.NONE,
-                        elapsedMs = started.elapsedNow().inWholeMilliseconds,
-                    ),
+                val result = RoundResult(
+                    puzzleNumber = puzzle.number,
+                    clue = submitted,
+                    guesses = guesses,
+                    solved = guesses.any { it.correct },
+                    mode = ConstraintMode.NONE,
+                    elapsedMs = started.elapsedNow().inWholeMilliseconds,
                 )
+                phase = Phase.Done(result)
+                onFinished(result)
             } catch (e: ApiException) {
                 submitError = e.error.display
                 // Back to Writing so the clue is still there to resend. Any
@@ -181,11 +214,23 @@ private fun Round(puzzle: DailyPuzzle, api: GameApi) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Text(
-            "MACHINE CHARADES #${puzzle.number}",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "MACHINE CHARADES #${puzzle.number}",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (stats.currentStreak > 0) {
+                Text(
+                    "\u00b7  ${stats.currentStreak} day streak",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MachineGreen,
+                )
+            }
+        }
 
         Text(
             puzzle.word.uppercase(),

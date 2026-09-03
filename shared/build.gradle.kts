@@ -46,7 +46,6 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
-            implementation(libs.compose.uiTooling)
             implementation(libs.ktor.client.okhttp)
         }
         iosMain.dependencies {
@@ -73,9 +72,11 @@ kotlin {
     }
 }
 
-dependencies {
-    androidRuntimeClasspath(libs.compose.uiTooling)
-}
+// No ui-tooling here on purpose. The KMP template adds it to androidRuntimeClasspath,
+// which covers every variant, and that drags androidx.compose.ui.tooling.PreviewActivity
+// — an exported activity — into the release manifest and the shipped dex. Nothing in
+// :shared declares @Preview, and androidApp already carries ui-tooling on
+// debugImplementation for the one preview that exists, so previews are unaffected.
 
 /**
  * Generates BuildConfig from local.properties.
