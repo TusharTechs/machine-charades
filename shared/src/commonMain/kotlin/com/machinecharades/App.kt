@@ -270,7 +270,12 @@ private fun ClueEntry(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            "Write a clue. The machine gets three guesses.",
+            "Make the machine say the word.",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            "The shorter your clue, the more it scores.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -282,7 +287,23 @@ private fun ClueEntry(
             label = { Text("Your clue") },
             isError = rejection != null,
             supportingText = {
-                Text(rejection ?: "${clue.trim().length} / $MAX_CLUE_CHARS")
+                // The bonus, live. The raw "n / 120" this replaced was actively
+                // misleading: 120 is only the hard cap, while every point of
+                // brevity is already gone by 60.
+                val used = clue.trim().length
+                val bonus = Scoring.brevityBonus(used)
+                Text(
+                    text = rejection ?: when {
+                        used == 0 -> "Under ${Scoring.CHAR_ALLOWANCE} characters earns a bonus."
+                        bonus > 0 -> "$used chars  ·  +$bonus bonus"
+                        else -> "$used chars  ·  no bonus past ${Scoring.CHAR_ALLOWANCE}"
+                    },
+                    color = when {
+                        rejection != null -> MaterialTheme.colorScheme.error
+                        bonus > 0 -> MachineGreen
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
             },
             modifier = Modifier.fillMaxWidth(),
         )
