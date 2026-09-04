@@ -3,6 +3,17 @@ package com.machinecharades
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -519,30 +530,77 @@ private fun ClueEntry(
 private fun GuessLog(guesses: List<MachineGuess>, thinking: Boolean) {
     if (guesses.isEmpty() && !thinking) return
 
+    // The answer arriving is the whole game. Mark it in the hand as well as on
+    // the screen — a hit and a miss should not feel the same.
+    val haptics = LocalHapticFeedback.current
+    LaunchedEffect(guesses.size) {
+        guesses.lastOrNull()?.let { latest ->
+            haptics.performHapticFeedback(
+                if (latest.correct) HapticFeedbackType.LongPress
+                else HapticFeedbackType.TextHandleMove,
+            )
+        }
+    }
+
     Column(
         Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         guesses.forEachIndexed { i, g ->
-            AnimatedVisibility(visible = true, enter = fadeIn() + expandVertically()) {
+            // Starts false and is flipped on first composition, so the row
+            // actually animates in. `visible = true` never transitions, which
+            // is why every guess used to snap into place.
+            val appear = remember(i) {
+                MutableTransitionState(false).apply { targetState = true }
+            }
+            AnimatedVisibility(
+                visibleState = appear,
+                enter = fadeIn(tween(320)) + expandVertically(tween(280)),
+            ) {
                 GuessRow(index = i + 1, guess = g)
             }
         }
         if (thinking && guesses.size < MAX_GUESSES) {
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    "thinking…",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            ThinkingRow()
         }
+    }
+}
+
+/**
+ * The machine working.
+ *
+ * Three dots pulsing in sequence rather than a spinner: a spinner is what a
+ * screen shows while it waits for a server, and this is a character taking its
+ * turn. Same wait, different thing being communicated.
+ */
+@Composable
+private fun ThinkingRow() {
+    val pulse = rememberInfiniteTransition()
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 14.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        repeat(3) { i ->
+            val alpha by pulse.animateFloat(
+                initialValue = 0.25f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(520, delayMillis = i * 170),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            )
+            Box(
+                Modifier.padding(horizontal = 4.dp).size(8.dp).alpha(alpha)
+                    .background(MachineGreen, CircleShape),
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(
+            "thinking",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
