@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.machinecharades.data.PlayerStats
+import com.machinecharades.data.Plus
 
 /**
  * Every puzzle before today.
@@ -31,6 +32,7 @@ fun ArchiveScreen(
 ) {
     // Newest first: the puzzle you just missed is the one you want.
     val numbers = (currentPuzzle - 1) downTo 1
+    val unlocked = Plus.unlocked(plus)
 
     Column(
         Modifier.safeContentPadding().fillMaxSize().padding(horizontal = 20.dp),
@@ -61,8 +63,8 @@ fun ArchiveScreen(
                     ArchiveRow(
                         number = n,
                         played = stats.roundFor(n),
-                        locked = !plus,
-                        onClick = { if (plus) onPlay(n) else onWantPlus() },
+                        locked = !unlocked,
+                        onClick = { if (unlocked) onPlay(n) else onWantPlus() },
                     )
                 }
             }
