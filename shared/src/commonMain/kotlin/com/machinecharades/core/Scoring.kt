@@ -94,6 +94,9 @@ object Scoring {
         if (result.mode != ConstraintMode.NONE) {
             append(" · ").append(modeLabel(result.mode))
         }
+        // Par turns the share from an announcement into a challenge: a number
+        // on its own says nothing, a number next to everyone else's is a dare.
+        result.comparablePar?.let { par -> append(" · par ").append(par) }
         if (partner != null) {
             append("\nvs ")
             if (partner.solved) {

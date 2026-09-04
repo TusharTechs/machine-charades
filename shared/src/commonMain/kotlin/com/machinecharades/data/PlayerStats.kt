@@ -14,6 +14,9 @@ data class StoredRound(
     @SerialName("guesses") val guesses: List<MachineGuess>,
     @SerialName("solved") val solved: Boolean,
     @SerialName("score") val score: Int,
+    @SerialName("par") val par: Int? = null,
+    @SerialName("best") val best: Int? = null,
+    @SerialName("solvers") val solvers: Int = 0,
 )
 
 /**
@@ -76,6 +79,9 @@ data class PlayerStats(
                     guesses = result.guesses,
                     solved = result.solved,
                     score = result.score,
+                    par = result.par,
+                    best = result.best,
+                    solvers = result.solvers,
                 )
                 ),
         )
@@ -118,4 +124,7 @@ fun StoredRound.asResult(): RoundResult = RoundResult(
     clue = clue,
     guesses = guesses,
     solved = solved,
+    par = par,
+    best = best,
+    solvers = solvers,
 )

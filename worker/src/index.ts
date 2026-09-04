@@ -71,6 +71,12 @@ interface GuessResponse {
   guess: string;
   correct: boolean;
   confidence: number;
+  /** Median clue length among everyone who has solved this puzzle. */
+  par?: number;
+  /** Shortest clue that has ever worked on this puzzle. */
+  best?: number;
+  /** How many players have solved it, so the client can hide a par of one. */
+  solvers?: number;
   /** True when served from KV rather than the model. Useful in the client's
    *  telemetry — a high cache rate is the thing keeping costs at zero. */
   cached: boolean;
@@ -99,6 +105,71 @@ export const utcDay = (now: Date = new Date()): string =>
  * answers are knowable in advance has no game left. So the puzzle number is
  * resolved from the date index server-side and never taken from the request.
  */
+/**
+ * What everyone else spent on this puzzle.
+ *
+ * A histogram of successful clue lengths rather than a running mean: par is a
+ * median, and a median needs the distribution. Lengths are capped at 120 by the
+ * validator, so this is at most 120 small integers however many people play.
+ */
+export interface ParStats {
+  /** Number of solved rounds recorded. */
+  n: number;
+  /** Shortest clue that has ever worked. */
+  best: number;
+  /** clue length -> how many players landed it at that length. */
+  hist: Record<string, number>;
+}
+
+const parKey = (puzzleNumber: number) => `par:${puzzleNumber}`;
+
+/** The median of a length histogram. */
+export function medianOf(stats: ParStats): number {
+  const target = stats.n / 2;
+  let seen = 0;
+  for (const len of Object.keys(stats.hist).map(Number).sort((a, b) => a - b)) {
+    seen += stats.hist[String(len)];
+    if (seen >= target) return len;
+  }
+  return stats.best;
+}
+
+/**
+ * Folds one solved round into the puzzle's par.
+ *
+ * Read-modify-write on KV, which is last-write-wins, so simultaneous solves can
+ * drop a sample. That is an acceptable trade here and not worth a Durable
+ * Object: par is a soft statistic shown to one decimal place of meaning, and
+ * losing the occasional data point moves a median by nothing. What it must
+ * never do is fail the round, hence the catch.
+ */
+async function recordPar(
+  env: Env,
+  puzzleNumber: number,
+  clueChars: number,
+): Promise<ParStats | null> {
+  try {
+    const raw = await env.CACHE.get(parKey(puzzleNumber));
+    const stats: ParStats = raw
+      ? (JSON.parse(raw) as ParStats)
+      : { n: 0, best: clueChars, hist: {} };
+
+    stats.n += 1;
+    stats.best = Math.min(stats.best, clueChars);
+    const bucket = String(clueChars);
+    stats.hist[bucket] = (stats.hist[bucket] ?? 0) + 1;
+
+    // Outlives the 14-day guess cache: par is what makes an archived puzzle
+    // worth replaying, so it has to survive longer than the round did.
+    await env.CACHE.put(parKey(puzzleNumber), JSON.stringify(stats), {
+      expirationTtl: 60 * 60 * 24 * 90,
+    });
+    return stats;
+  } catch {
+    return null;
+  }
+}
+
 export async function handleToday(env: Env, url: URL): Promise<Response> {
   // Dev-only escape hatch. The schedule starts on launch day, so before then
   // there is no puzzle for "today" and the app cannot be exercised at all.
@@ -200,10 +271,21 @@ export default {
     const cacheKey = `g:${puzzle.n}:${body.attempt}:${await sha256(
       canonical(body.clue),
     )}`;
+    const clueChars = body.clue.trim().length;
     const cached = await env.CACHE.get(cacheKey);
     if (cached !== null) {
       const hit = JSON.parse(cached) as Omit<GuessResponse, 'cached'>;
-      return json({ ...hit, cached: true } satisfies GuessResponse);
+      // Par is recorded on the cache path too. The cached value is the model's
+      // answer, not this player's round — someone reaching the same clue as an
+      // earlier player still solved it, and still counts.
+      const stats = hit.correct
+        ? await recordPar(env, puzzle.n, clueChars)
+        : null;
+      return json({
+        ...hit,
+        ...(stats ? { par: medianOf(stats), best: stats.best, solvers: stats.n } : {}),
+        cached: true,
+      } satisfies GuessResponse);
     }
 
     // --- model --------------------------------------------------------------
@@ -222,6 +304,11 @@ export default {
     const correct = isCorrect(guess, puzzle.word);
     const payload = { guess, correct, confidence: correct ? 1 : 0.4 };
 
+    // Deliberately not part of `payload`, which is what gets cached: par moves
+    // as more people play, and a cached par would freeze at whatever it was
+    // when the first player used this clue.
+    const stats = correct ? await recordPar(env, puzzle.n, clueChars) : null;
+
     // Cache and increment the counter without holding up the response.
     await Promise.all([
       env.CACHE.put(cacheKey, JSON.stringify(payload), {
@@ -230,7 +317,11 @@ export default {
       env.CACHE.put(rlKey, String(used + 1), { expirationTtl: 60 * 60 * 36 }),
     ]);
 
-    return json({ ...payload, cached: false } satisfies GuessResponse);
+    return json({
+      ...payload,
+      ...(stats ? { par: medianOf(stats), best: stats.best, solvers: stats.n } : {}),
+      cached: false,
+    } satisfies GuessResponse);
   },
 } satisfies ExportedHandler<Env>;
 

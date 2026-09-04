@@ -1,5 +1,6 @@
 package com.machinecharades.core
 
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -91,7 +92,29 @@ data class RoundResult(
     @SerialName("solved") val solved: Boolean,
     @SerialName("mode") val mode: ConstraintMode = ConstraintMode.NONE,
     @SerialName("ms") val elapsedMs: Long = 0,
+    /**
+     * What everyone else spent, when the server had enough solves to say.
+     *
+     * EncodeDefault.NEVER so a round without par serialises exactly as it did
+     * before par existed — every stored round stays byte-identical, and
+     * WireFormatTest keeps meaning what it meant.
+     */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("par") val par: Int? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("best") val best: Int? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("solvers") val solvers: Int = 0,
 ) {
+    /**
+     * Par worth showing: your own solve is not a field to measure against, so
+     * it stays hidden until someone else has played.
+     */
+    val comparablePar: Int? get() = par?.takeIf { solvers >= 2 }
+
+    /** Characters saved against par. Negative means you spent more. */
+    val underPar: Int? get() = comparablePar?.let { it - clueChars }
+
     val clueChars: Int get() = clue.trim().length
     val guessesUsed: Int get() = guesses.size
     val score: Int get() = Scoring.score(solved, guessesUsed, clueChars)
