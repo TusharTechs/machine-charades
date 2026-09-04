@@ -22,7 +22,14 @@ import com.machinecharades.data.PlayerStats
  * read better as numbers.
  */
 @Composable
-fun StatsScreen(stats: PlayerStats, plus: Boolean, onWantPlus: () -> Unit, onBack: () -> Unit) {
+fun StatsScreen(
+    stats: PlayerStats,
+    plus: Boolean,
+    soundOn: Boolean,
+    onSoundChange: (Boolean) -> Unit,
+    onWantPlus: () -> Unit,
+    onBack: () -> Unit,
+) {
     Column(
         Modifier.safeContentPadding().fillMaxSize()
             .verticalScroll(rememberScrollState())
@@ -45,6 +52,15 @@ fun StatsScreen(stats: PlayerStats, plus: Boolean, onWantPlus: () -> Unit, onBac
             Figure(stats.currentStreak.toString(), "streak")
             Figure(stats.maxStreak.toString(), "best")
             Figure(stats.played.toString(), "played")
+        }
+
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Sound", style = MaterialTheme.typography.bodyLarge)
+            Switch(checked = soundOn, onCheckedChange = onSoundChange)
         }
 
         if (plus) {
