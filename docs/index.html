@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Machine Charades — a daily word game where you write the clue</title>
+<meta name="description" content="You get a word. Write a clue that makes an AI say it. Five obvious words are blocked, and the shortest clue that works wins.">
+<link rel="icon" href="img/icon.png">
+<meta property="og:title" content="Machine Charades">
+<meta property="og:description" content="You get a word. Write a clue that makes an AI say it. The shortest clue that works wins.">
+<meta property="og:image" content="img/icon.png">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#0E1116; --surface:#161A21; --raise:#1F242D;
+    --ink:#E8EAED; --muted:#9AA3AF; --faint:#6B7480;
+    --line:#252C36; --green:#4ADE80; --red:#F87171;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:17px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:62rem;margin:0 auto;padding:0 1.5rem}
+  .mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+  a{color:var(--green)}
+
+  /* hero */
+  header{padding:4.5rem 0 3rem;text-align:center}
+  .mark{display:flex;justify-content:center;gap:.55rem;margin-bottom:2rem}
+  .mark i{width:38px;height:38px;border-radius:9px;background:#3D4758;display:block}
+  .mark i:last-child{background:var(--green)}
+  h1{
+    font-size:clamp(2.3rem,6vw,3.6rem);font-weight:700;letter-spacing:-.03em;
+    line-height:1.05;margin:0 0 1rem;text-wrap:balance;
+  }
+  .lede{
+    font-size:clamp(1.05rem,2.4vw,1.3rem);color:var(--muted);
+    max-width:40rem;margin:0 auto;text-wrap:balance;
+  }
+  .cta{display:flex;flex-wrap:wrap;gap:.9rem;justify-content:center;margin-top:2.25rem}
+  .btn{
+    display:inline-block;padding:.85rem 1.6rem;border-radius:999px;
+    font-weight:600;text-decoration:none;
+  }
+  .btn.primary{background:var(--green);color:#08130C}
+  .btn.ghost{border:1px solid var(--line);color:var(--ink)}
+  .status{
+    margin-top:1rem;font-size:.9rem;color:var(--faint);
+    font-family:"JetBrains Mono",monospace;
+  }
+
+  /* the example */
+  .demo{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:2rem 1.75rem;margin:4rem 0;
+  }
+  .word{
+    font-size:clamp(2rem,5vw,2.9rem);font-weight:700;letter-spacing:.02em;
+    text-align:center;margin:.25rem 0 .35rem;
+  }
+  .eyebrow{
+    font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--faint);text-align:center;display:block;
+  }
+  .banned{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:1.25rem 0 1.5rem}
+  .banned span{
+    background:var(--raise);border-radius:999px;padding:.4rem .95rem;
+    font-size:.95rem;color:var(--ink);
+  }
+  .try{max-width:34rem;margin:0 auto;display:flex;flex-direction:column;gap:.7rem}
+  .row{display:flex;justify-content:space-between;gap:1rem;align-items:baseline;
+       border-bottom:1px solid var(--line);padding-bottom:.7rem}
+  .row:last-child{border-bottom:0}
+  .row b{font-weight:500}
+  .no{color:var(--red);font-family:"JetBrains Mono",monospace;font-size:.85rem;white-space:nowrap}
+  .yes{color:var(--green);font-family:"JetBrains Mono",monospace;font-size:.85rem;white-space:nowrap}
+
+  /* sections */
+  section{padding:3.5rem 0;border-top:1px solid var(--line)}
+  h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:600;letter-spacing:-.02em;margin:0 0 1rem;text-wrap:balance}
+  p{margin:0 0 1rem;max-width:44rem}
+  .muted{color:var(--muted)}
+
+  .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1.25rem;margin-top:2rem}
+  .shots figure{margin:0}
+  .shots img{width:100%;border-radius:14px;border:1px solid var(--line);display:block}
+  .shots figcaption{
+    margin-top:.6rem;font-size:.85rem;color:var(--faint);
+    font-family:"JetBrains Mono",monospace;
+  }
+
+  .curve{display:flex;flex-direction:column;gap:.55rem;margin:1.5rem 0;max-width:34rem}
+  .curve div{display:flex;align-items:center;gap:.9rem;font-family:"JetBrains Mono",monospace;font-size:.9rem}
+  .curve u{display:block;height:12px;border-radius:3px;background:var(--green);text-decoration:none}
+  .curve span:first-child{width:4.5rem;color:var(--muted);text-align:right}
+  .curve span:last-child{color:var(--faint)}
+
+  footer{border-top:1px solid var(--line);padding:2.5rem 0 4rem;color:var(--faint);font-size:.9rem}
+  footer a{color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="mark" aria-hidden="true"><i></i><i></i><i></i></div>
+    <h1>You know the word.<br>The machine doesn't.</h1>
+    <p class="lede">
+      A daily word game where you write the clue and a language model has to guess it.
+      Five obvious words are blocked. The shortest clue that works wins.
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://play.google.com/store/apps/details?id=com.techtush.machinecharades">Get it on Google Play</a>
+      <a class="btn ghost" href="https://github.com/TusharTechs/machine-charades">Read the source</a>
+    </div>
+    <p class="status">Currently in closed testing · Android · iOS to follow</p>
+  </header>
+
+  <div class="demo">
+    <span class="eyebrow">Machine charades #1</span>
+    <div class="word">GIRAFFE</div>
+    <span class="eyebrow">Blocked today</span>
+    <div class="banned">
+      <span>neck</span><span>tall</span><span>africa</span><span>zoo</span><span>spots</span>
+    </div>
+    <div class="try">
+      <div class="row"><b>“long-necked savanna browser”</b><span class="no">necked → neck</span></div>
+      <div class="row"><b>“spotty giant”</b><span class="no">spotty → spots</span></div>
+      <div class="row"><b>“long yellow tree eater”</b><span class="yes">giraffe · 22 chars</span></div>
+    </div>
+  </div>
+
+  <section>
+    <h2>The machine is good. That's the problem.</h2>
+    <p>
+      It gets almost any fair clue on the first try, so “can you make it guess” is not much
+      of a question. The real one is <em>how few characters can you do it in</em> — and that
+      turns out to be a genuinely steep curve. Measured against the real model:
+    </p>
+    <div class="curve">
+      <div><span>60 chars</span><u style="width:100%"></u><span>100%</span></div>
+      <div><span>40 chars</span><u style="width:100%"></u><span>100%</span></div>
+      <div><span>25 chars</span><u style="width:90%"></u><span>90%</span></div>
+      <div><span>15 chars</span><u style="width:67%"></u><span>67%</span></div>
+    </div>
+    <p class="muted">
+      So every puzzle shows <b>par</b> — the median clue length among everyone who has solved
+      it. Your score is not a number in a vacuum; it is a number next to everyone else's.
+    </p>
+  </section>
+
+  <section>
+    <h2>Thirty seconds a day</h2>
+    <div class="shots">
+      <figure><img src="img/01-round.png" alt="Today's puzzle: the word GIRAFFE with five blocked words below it"><figcaption>One word. Five blocked.</figcaption></figure>
+      <figure><img src="img/04-blocked.png" alt="A clue being refused because it contains a variation of a blocked word"><figcaption>It catches variations.</figcaption></figure>
+      <figure><img src="img/02-typing.png" alt="Writing a clue, with the character count and bonus shown live"><figcaption>Shorter scores more.</figcaption></figure>
+      <figure><img src="img/03-result.png" alt="The result screen showing the machine guessed correctly"><figcaption>Then it answers.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Built in the open</h2>
+    <p>
+      Kotlin Multiplatform — around 94% of the code is written once and runs on both Android
+      and iOS, including every screen. The API is a Cloudflare Worker, the guesses come from
+      Gemini, and subscriptions run through RevenueCat.
+    </p>
+    <p class="muted">
+      The whole thing is public, including the part where a substring check for banned words
+      kept rejecting <span class="mono">delight</span>, <span class="mono">sandwich</span>
+      and <span class="mono">window</span> until someone measured it.
+      <a href="https://github.com/TusharTechs/machine-charades">See for yourself</a>.
+    </p>
+  </section>
+
+  <footer>
+    <div class="wrap" style="padding:0">
+      Machine Charades — built by
+      <a href="https://github.com/TusharTechs">TechTush Games</a>
+      for <a href="https://shipaton.revenuecat.com">Shipaton 2026</a>.
+      · <a href="privacy.html">Privacy</a>
+    </div>
+  </footer>
+</div>
+
+</body>
+</html>
