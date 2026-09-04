@@ -113,6 +113,22 @@ class GameApi(
         }.body()
     }
 
+    /**
+     * A puzzle from the archive.
+     *
+     * The Worker serves this only once the puzzle's scheduled date has passed,
+     * so it cannot be used to read ahead. That check lives on the server for
+     * the obvious reason.
+     */
+    suspend fun archived(puzzleNumber: Int): DailyPuzzle {
+        requireConfigured()
+        return authorized { token ->
+            http.get("$baseUrl/puzzle/$puzzleNumber") {
+                header("authorization", "Bearer $token")
+            }
+        }.body()
+    }
+
     suspend fun guess(
         puzzleNumber: Int,
         clue: String,

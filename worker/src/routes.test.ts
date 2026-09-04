@@ -8,7 +8,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { utcDay, handleToday, medianOf, type Env, type ParStats } from './index.js';
+import worker, { utcDay, handleToday, handleArchive, medianOf, type Env, type ParStats } from './index.js';
 
 const TODAY = utcDay();
 
@@ -173,4 +173,51 @@ test('par picks the lower middle on an even count', () => {
 
 test('par survives an empty histogram by falling back to best', () => {
   assert.equal(medianOf({ n: 0, best: 17, hist: {} }), 17);
+});
+
+// ---------------------------------------------------------------------------
+// archive
+// ---------------------------------------------------------------------------
+
+const ARCHIVED = { ...PUZZLE, n: 1, date: '2020-01-01', word: 'umbrella' };
+
+/** PUZZLE is scheduled for TODAY; FUTURE for 2099. */
+const archiveEnv = () =>
+  env({
+    PUZZLES: kv({
+      'puzzle:1': JSON.stringify(ARCHIVED),
+      'puzzle:7': JSON.stringify(PUZZLE),
+      'puzzle:8': JSON.stringify(FUTURE),
+    }),
+  });
+
+test('the archive serves a puzzle whose day has passed', async () => {
+  const res = await handleArchive(archiveEnv(), 1);
+  assert.equal(res.status, 200);
+  assert.equal(((await res.json()) as { word: string }).word, 'umbrella');
+});
+
+test('the archive refuses a puzzle scheduled for the future', async () => {
+  // The load-bearing one. An archive that hands out tomorrow's word ends the
+  // daily game just as surely as the ?n= hatch would if it ever shipped on.
+  const res = await handleArchive(archiveEnv(), 8);
+  assert.equal(res.status, 404);
+  assert.equal(((await res.json()) as { error: string }).error, 'not_yet');
+});
+
+test('the archive refuses today itself', async () => {
+  // Today is played through /puzzle/today, which is where one-round-a-day is
+  // enforced. Serving it here would be a second way in.
+  const res = await handleArchive(archiveEnv(), 7);
+  assert.equal(res.status, 404);
+  assert.equal(((await res.json()) as { error: string }).error, 'not_yet');
+});
+
+test('the archive 404s an unknown puzzle number', async () => {
+  assert.equal((await handleArchive(archiveEnv(), 4242)).status, 404);
+});
+
+test('the archive route is reachable and past-only end to end', async () => {
+  assert.equal((await get('/puzzle/1', archiveEnv())).status, 200);
+  assert.equal((await get('/puzzle/8', archiveEnv())).status, 404);
 });

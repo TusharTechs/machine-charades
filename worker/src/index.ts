@@ -208,6 +208,32 @@ export async function handleToday(env: Env, url: URL): Promise<Response> {
   });
 }
 
+/**
+ * A puzzle from the archive.
+ *
+ * Deliberately separate from the `?n=` escape hatch above, which stays gated
+ * behind ALLOW_UNVERIFIED. That one serves any puzzle by number; this one
+ * serves only puzzles whose scheduled date has already passed, so the archive
+ * cannot be used to read tomorrow's word. The daily game only works if nobody
+ * can run ahead of it.
+ */
+export async function handleArchive(env: Env, puzzleNumber: number): Promise<Response> {
+  const raw = await env.PUZZLES.get(`puzzle:${puzzleNumber}`);
+  if (raw === null) return json({ error: 'unknown_puzzle' }, 404);
+
+  const puzzle = JSON.parse(raw) as Puzzle;
+  // String compare is correct for ISO dates and avoids a Date round trip.
+  if (puzzle.date >= utcDay()) return json({ error: 'not_yet' }, 404);
+
+  return new Response(raw, {
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      // A past puzzle never changes. Cache it hard.
+      'cache-control': 'public, max-age=86400',
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -220,6 +246,13 @@ export default {
     if (url.pathname === '/puzzle/today') {
       if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
       return handleToday(env, url);
+    }
+
+    // /puzzle/<n> — the archive. Past puzzles only; see handleArchive.
+    const archiveMatch = url.pathname.match(/^\/puzzle\/([0-9]{1,6})$/);
+    if (archiveMatch !== null) {
+      if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+      return handleArchive(env, Number(archiveMatch[1]));
     }
 
     if (url.pathname !== '/guess') return json({ error: 'not_found' }, 404);
