@@ -38,6 +38,18 @@ object Plus {
     /** False in a build with no key, so the paywall stays hidden rather than broken. */
     val isConfigured: Boolean get() = storeApiKey.isNotEmpty()
 
+    /**
+     * Whether this player should see everything.
+     *
+     * True when they bought Plus — and also when there is nothing to buy. A
+     * build with no store key must degrade to a complete free game, not to a
+     * game full of padlocks that open an empty sheet. Every gate in the app
+     * asks this rather than asking about the entitlement directly, so the two
+     * cannot drift apart.
+     */
+    fun unlocked(entitled: Boolean, configured: Boolean = isConfigured): Boolean =
+        entitled || !configured
+
     private var started = false
 
     /** Safe to call more than once; the SDK itself is not. */

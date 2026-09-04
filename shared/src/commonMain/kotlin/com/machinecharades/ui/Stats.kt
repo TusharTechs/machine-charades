@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.machinecharades.data.PlayerStats
+import com.machinecharades.data.Plus
 
 /**
  * The record. Everything here was already being stored and never shown.
@@ -63,7 +64,7 @@ fun StatsScreen(
             Switch(checked = soundOn, onCheckedChange = onSoundChange)
         }
 
-        if (plus) {
+        if (Plus.unlocked(plus)) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,

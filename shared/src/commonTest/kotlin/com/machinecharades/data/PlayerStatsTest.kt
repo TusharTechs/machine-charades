@@ -3,7 +3,10 @@ package com.machinecharades.data
 import com.machinecharades.core.MachineGuess
 import com.machinecharades.core.RoundResult
 import kotlin.test.Test
+import com.machinecharades.data.Plus
+import kotlin.test.assertFalse
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -139,5 +142,33 @@ class PlayerStoreTest {
     fun corrupt_json_loads_a_blank_slate_rather_than_throwing() {
         val storage = FakeStorage().also { it.put("player-stats", "{ not json") }
         assertEquals(PlayerStats(), PlayerStore(storage).load())
+    }
+}
+
+class PlusGateTest {
+
+    @Test
+    fun a_build_with_no_store_shows_everything() {
+        // A build that cannot sell must degrade to a complete free game rather
+        // than to a game full of padlocks that open an empty sheet. Every gate
+        // in the app asks this, so the branches must not drift.
+        assertTrue(
+            Plus.unlocked(entitled = false, configured = false),
+            "nothing to buy means nothing to lock",
+        )
+        assertTrue(Plus.unlocked(entitled = true, configured = false))
+    }
+
+    @Test
+    fun a_build_that_can_sell_locks_what_was_not_bought() {
+        assertFalse(Plus.unlocked(entitled = false, configured = true))
+        assertTrue(Plus.unlocked(entitled = true, configured = true))
+    }
+
+    @Test
+    fun the_entitlement_identifier_is_the_one_the_dashboard_uses() {
+        // Hardcoded on both sides. A mismatch makes every purchase succeed and
+        // unlock nothing, with no error anywhere to explain it.
+        assertEquals("plus", Plus.ENTITLEMENT)
     }
 }

@@ -129,8 +129,13 @@ val generateBuildConfig by tasks.registering {
     // RevenueCat publishes one public SDK key per store. Both ship inside the
     // binary by design — they identify the app and authorise nothing — but they
     // stay out of the repo like the Firebase one.
-    val rcAndroid = props.getProperty("revenuecat.androidKey", "")
-    val rcIos = props.getProperty("revenuecat.iosKey", "")
+    // Overridable from the command line, like appVersionCode. Lets a build be
+    // cut with no store key at all — which ships the complete free game — or
+    // with the production key, without editing a developer's local.properties.
+    val rcAndroid = (findProperty("revenuecatAndroidKey") as String?)
+        ?: props.getProperty("revenuecat.androidKey", "")
+    val rcIos = (findProperty("revenuecatIosKey") as String?)
+        ?: props.getProperty("revenuecat.iosKey", "")
     inputs.property("rcAndroid", rcAndroid)
     inputs.property("rcIos", rcIos)
     inputs.property("workerUrl", workerUrl)

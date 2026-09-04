@@ -101,7 +101,11 @@ val rejectTestStoreKeyInRelease by tasks.registering {
     val props = Properties()
     val localProps = rootProject.file("local.properties")
     if (localProps.exists()) localProps.inputStream().use { props.load(it) }
-    val key = props.getProperty("revenuecat.androidKey", "")
+    // Same override the BuildConfig generator honours, so the guard checks the
+    // key that will actually ship rather than whatever happens to sit in a
+    // developer's local.properties.
+    val key = (findProperty("revenuecatAndroidKey") as String?)
+        ?: props.getProperty("revenuecat.androidKey", "")
     inputs.property("revenuecatKey", key)
     doLast {
         check(!key.startsWith("test_")) {

@@ -763,20 +763,18 @@ private fun ModeRow(
     onSelect: (ConstraintMode) -> Unit,
     onLocked: () -> Unit,
 ) {
-    val offered = if (plus || Plus.isConfigured) {
-        ConstraintMode.entries
-    } else {
-        listOf(ConstraintMode.NONE)
-    }
-    if (offered.size == 1) return
+    // Nothing to sell means nothing to lock: the row disappears rather than
+    // offering padlocks that open an empty sheet.
+    if (!Plus.isConfigured && !plus) return
+    val unlocked = Plus.unlocked(plus)
 
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        offered.forEach { candidate ->
-            val locked = candidate != ConstraintMode.NONE && !plus
+        ConstraintMode.entries.forEach { candidate ->
+            val locked = candidate != ConstraintMode.NONE && !unlocked
             val active = candidate == selected
             Surface(
                 shape = RoundedCornerShape(999.dp),
