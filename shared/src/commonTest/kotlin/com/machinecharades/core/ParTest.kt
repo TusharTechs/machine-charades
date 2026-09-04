@@ -69,3 +69,37 @@ class ParTest {
         assertTrue("yellow" !in shared.lowercase(), "the clue must never leak")
     }
 }
+
+class ShareLinkTest {
+
+    @Test
+    fun the_share_carries_a_way_to_play() {
+        // Without this every shared result is a dead end: the reader sees a
+        // score and has nowhere to go. Wordle could omit it because everyone
+        // already knew where it lived; a new game cannot.
+        val shared = Scoring.shareString(
+            RoundResult(
+                puzzleNumber = 4,
+                clue = "short one",
+                guesses = listOf(MachineGuess("umbrella", true, 1f)),
+                solved = true,
+            ),
+        )
+        assertTrue(Scoring.PLAY_URL in shared, "share should link somewhere: $shared")
+        assertTrue(shared.trimEnd().endsWith(Scoring.PLAY_URL), "the link belongs last")
+    }
+
+    @Test
+    fun the_link_can_be_omitted_for_a_caller_that_supplies_its_own() {
+        val shared = Scoring.shareString(
+            RoundResult(
+                puzzleNumber = 4,
+                clue = "short one",
+                guesses = listOf(MachineGuess("umbrella", true, 1f)),
+                solved = true,
+            ),
+            url = null,
+        )
+        assertTrue("http" !in shared, "no link was asked for: $shared")
+    }
+}

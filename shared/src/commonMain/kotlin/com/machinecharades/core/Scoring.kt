@@ -16,10 +16,24 @@ object Scoring {
     private val guessBase = intArrayOf(1000, 600, 350)
 
     /** Characters you may spend before the brevity bonus runs out. */
-    const val CHAR_ALLOWANCE = 60
+    /**
+     * Where the brevity bonus starts paying.
+     *
+     * Was 60, which measured as free: tools/measure-difficulty.mjs puts the
+     * machine's first-guess win rate at 100% for a 60-character clue and 100%
+     * again at 40. It only starts missing below about 30 — 90% at 25 chars,
+     * 67% at 15 — so 30 is where earning something should begin.
+     */
+    const val CHAR_ALLOWANCE = 30
 
     /** Points per character saved under the allowance. */
-    private const val CHAR_BONUS_PER = 5
+    /**
+     * Raised with the allowance so the reward still means something across a
+     * much narrower band. At 5 a point a great clue beat a lazy one by about
+     * 18%, which is not a scoreboard worth competing on; 15 across 30
+     * characters puts a real gap between 25 chars and 12.
+     */
+    private const val CHAR_BONUS_PER = 15
 
     fun score(solved: Boolean, guessesUsed: Int, clueChars: Int): Int {
         if (!solved) return 0
@@ -78,10 +92,25 @@ object Scoring {
      * how efficiently you got there. The character count is the part that
      * invites a challenge rather than just announcing a result.
      */
+    /**
+     * Where a shared result sends someone who wants to play.
+     *
+     * Wordle could share a bare grid because everyone already knew where to
+     * find it. A game nobody has heard of cannot: without this every shared
+     * result is a dead end, which is the difference between a score someone
+     * admires and a game they open.
+     *
+     * One link for now. When the App Store listing exists this should become a
+     * universal link that resolves per platform, rather than an iOS player
+     * handing their friends a Play Store URL.
+     */
+    const val PLAY_URL = "https://play.google.com/store/apps/details?id=com.techtush.machinecharades"
+
     fun shareString(
         result: RoundResult,
         partner: PartnerRound? = null,
         appName: String = "MACHINE CHARADES",
+        url: String? = PLAY_URL,
     ): String = buildString {
         append(appName).append(" #").append(result.puzzleNumber).append('\n')
         append(squares(result)).append("  ")
@@ -107,6 +136,7 @@ object Scoring {
                 append("they got stumped")
             }
         }
+        url?.let { append('\n').append(it) }
     }
 
     /**
