@@ -248,13 +248,21 @@ class ScoringTest {
 
     @Test
     fun matchesTheSharedVectors() {
-        assertEquals(1200, Scoring.score(solved = true, guessesUsed = 1, clueChars = 20))
-        assertEquals(1025, Scoring.score(solved = true, guessesUsed = 1, clueChars = 55))
-        assertEquals(800, Scoring.score(solved = true, guessesUsed = 2, clueChars = 20))
+        // Recalibrated with CHAR_ALLOWANCE 60 -> 30 and the rate 5 -> 15, because
+        // 60 characters measured as a free bar the machine clears every time.
+        assertEquals(1150, Scoring.score(solved = true, guessesUsed = 1, clueChars = 20))
+        assertEquals(1000, Scoring.score(solved = true, guessesUsed = 1, clueChars = 55))
+        assertEquals(750, Scoring.score(solved = true, guessesUsed = 2, clueChars = 20))
         assertEquals(1000, Scoring.score(solved = true, guessesUsed = 1, clueChars = 60))
         assertEquals(1000, Scoring.score(solved = true, guessesUsed = 1, clueChars = 90))
-        assertEquals(500, Scoring.score(solved = true, guessesUsed = 3, clueChars = 30))
+        assertEquals(350, Scoring.score(solved = true, guessesUsed = 3, clueChars = 30))
         assertEquals(0, Scoring.score(solved = false, guessesUsed = 3, clueChars = 12))
+
+        // The band that matters. A clue the machine often misses should be
+        // worth visibly more than one it never misses.
+        val hard = Scoring.score(solved = true, guessesUsed = 1, clueChars = 15)
+        val easy = Scoring.score(solved = true, guessesUsed = 1, clueChars = 30)
+        assertTrue(hard - easy >= 200, "brevity must pay across the hard band: $hard vs $easy")
     }
 
     /**
