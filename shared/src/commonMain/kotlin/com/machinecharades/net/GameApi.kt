@@ -26,6 +26,12 @@ data class GuessResponse(
     @SerialName("correct") val correct: Boolean,
     @SerialName("confidence") val confidence: Float = 0.5f,
     @SerialName("cached") val cached: Boolean = false,
+    /** Median clue length among everyone who has solved this puzzle. */
+    @SerialName("par") val par: Int? = null,
+    /** Shortest clue that has ever worked on it. */
+    @SerialName("best") val best: Int? = null,
+    /** How many have solved it. Below two, a par is just your own score. */
+    @SerialName("solvers") val solvers: Int = 0,
 )
 
 @Serializable

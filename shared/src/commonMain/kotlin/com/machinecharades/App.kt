@@ -237,6 +237,9 @@ private fun Round(
                 // One clue, up to MAX_GUESSES attempts. Each is its own request
                 // so the machine's thinking arrives as it happens rather than
                 // as a finished list — the pause between attempts is the drama.
+                var par: Int? = null
+                var best: Int? = null
+                var solvers = 0
                 for (attempt in 1..MAX_GUESSES) {
                     // Send what it has already said. Without this the Worker's
                     // "do not repeat them" line has nothing to work with and the
@@ -249,7 +252,12 @@ private fun Round(
                         mode = mode,
                     )
                     guesses = guesses + MachineGuess(reply.guess, reply.correct, reply.confidence)
-                    if (reply.correct) break
+                    if (reply.correct) {
+                        // Only the solving reply carries par — that is the call
+                        // the server folded this round into.
+                        par = reply.par; best = reply.best; solvers = reply.solvers
+                        break
+                    }
                     if (attempt < MAX_GUESSES) delay(700)
                 }
                 val result = RoundResult(
@@ -259,6 +267,9 @@ private fun Round(
                     solved = guesses.any { it.correct },
                     mode = mode,
                     elapsedMs = started.elapsedNow().inWholeMilliseconds,
+                    par = par,
+                    best = best,
+                    solvers = solvers,
                 )
                 phase = Phase.Done(result)
                 onFinished(result)
@@ -538,6 +549,28 @@ private fun ResultCard(result: RoundResult) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
+
+            result.comparablePar?.let { par ->
+                val saved = result.underPar ?: 0
+                Text(
+                    when {
+                        saved > 0 -> "Par $par · you were $saved under"
+                        saved == 0 -> "Par $par · you matched it"
+                        else -> "Par $par · you were ${-saved} over"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (saved >= 0) MachineGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                result.best?.let { best ->
+                    Text(
+                        "Shortest clue that has ever worked: $best",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
 
             Text(
                 "${result.score}",

@@ -8,7 +8,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { utcDay, handleToday, type Env } from './index.js';
+import worker, { utcDay, handleToday, medianOf, type Env, type ParStats } from './index.js';
 
 const TODAY = utcDay();
 
@@ -148,4 +148,29 @@ test('the dev override rejects non-numeric input', async () => {
   const res = await get('/puzzle/today?n=../../etc/passwd');
   // Falls through to the date index, which has today -> 7.
   assert.equal(((await res.json()) as { n: number }).n, 7);
+});
+
+// ---------------------------------------------------------------------------
+// par
+// ---------------------------------------------------------------------------
+
+test('par is the median clue length, not the mean', () => {
+  // One very long clue must not drag par upwards; that is the whole reason
+  // this is a median. Mean here would be 40, which no player is near.
+  const stats: ParStats = { n: 5, best: 12, hist: { '12': 1, '18': 2, '22': 1, '130': 1 } };
+  assert.equal(medianOf(stats), 18);
+});
+
+test('par of a single solve is that solve', () => {
+  assert.equal(medianOf({ n: 1, best: 22, hist: { '22': 1 } }), 22);
+});
+
+test('par picks the lower middle on an even count', () => {
+  // Four solves at 10, 14, 20, 30. Either middle is defensible; taking the
+  // lower one keeps par a target you can actually beat.
+  assert.equal(medianOf({ n: 4, best: 10, hist: { '10': 1, '14': 1, '20': 1, '30': 1 } }), 14);
+});
+
+test('par survives an empty histogram by falling back to best', () => {
+  assert.equal(medianOf({ n: 0, best: 17, hist: {} }), 17);
 });
