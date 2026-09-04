@@ -34,7 +34,9 @@ import com.machinecharades.net.ApiException
 import com.machinecharades.net.GameApi
 import com.machinecharades.net.redactSecrets
 import com.machinecharades.ui.MachineCharadesTheme
+import com.machinecharades.ui.ArchiveScreen
 import com.machinecharades.ui.Paywall
+import com.machinecharades.ui.StatsScreen
 import com.machinecharades.ui.MachineGreen
 import com.machinecharades.ui.MissRed
 import kotlinx.coroutines.delay
@@ -45,7 +47,11 @@ import kotlin.time.TimeSource
 private sealed interface Screen {
     data object Loading : Screen
     data class Failed(val message: String) : Screen
-    data class Playing(val puzzle: DailyPuzzle) : Screen
+
+    /** [fromArchive] rounds are replays of a past day, so they offer a way back. */
+    data class Playing(val puzzle: DailyPuzzle, val fromArchive: Boolean = false) : Screen
+    data object Archive : Screen
+    data object Stats : Screen
 }
 
 /** Where the round has got to. */
@@ -92,13 +98,19 @@ fun App(
             }
         }
 
+        // Today's puzzle, kept so the archive knows where the past ends and so
+        // leaving a replay does not need a second fetch.
+        var today by remember { mutableStateOf<DailyPuzzle?>(null) }
+
         LaunchedEffect(reloads) {
             screen = Screen.Loading
             // Read before the network call: a returning player should see their
             // streak on the same frame as the puzzle, not a beat later.
             stats = store.load()
             screen = try {
-                Screen.Playing(api.today())
+                val puzzle = api.today()
+                today = puzzle
+                Screen.Playing(puzzle)
             } catch (e: ApiException) {
                 Screen.Failed(e.error.display)
             } catch (e: Throwable) {
@@ -120,9 +132,43 @@ fun App(
                         stats = stats,
                         plus = plus,
                         onWantPlus = { paywallOpen = true },
+                        onArchive = { screen = Screen.Archive },
+                        onStats = { screen = Screen.Stats },
+                        onBack = if (s.fromArchive) {
+                            { screen = Screen.Archive }
+                        } else {
+                            null
+                        },
                     ) { finished ->
                         stats = stats.recording(finished).also(store::save)
                     }
+
+                    Screen.Archive -> ArchiveScreen(
+                        currentPuzzle = today?.number ?: 1,
+                        stats = stats,
+                        plus = plus,
+                        onPlay = { n ->
+                            scope.launch {
+                                screen = Screen.Loading
+                                screen = try {
+                                    Screen.Playing(api.archived(n), fromArchive = true)
+                                } catch (e: ApiException) {
+                                    Screen.Failed(e.error.display)
+                                } catch (e: Throwable) {
+                                    Screen.Failed(describe(e))
+                                }
+                            }
+                        },
+                        onWantPlus = { paywallOpen = true },
+                        onBack = { today?.let { screen = Screen.Playing(it) } },
+                    )
+
+                    Screen.Stats -> StatsScreen(
+                        stats = stats,
+                        plus = plus,
+                        onWantPlus = { paywallOpen = true },
+                        onBack = { today?.let { screen = Screen.Playing(it) } },
+                    )
                 }
 
                 if (paywallOpen) {
@@ -206,6 +252,10 @@ private fun Round(
     stats: PlayerStats,
     plus: Boolean,
     onWantPlus: () -> Unit,
+    onArchive: () -> Unit,
+    onStats: () -> Unit,
+    /** Non-null only for a replay, which is the one round you can leave. */
+    onBack: (() -> Unit)?,
     onFinished: (RoundResult) -> Unit,
 ) {
     // Today may already be behind us. Reopening the app has to show what you
@@ -291,6 +341,19 @@ private fun Round(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (onBack != null) {
+                TextButton(onBack) { Text("Back") }
+            } else {
+                TextButton(onArchive) { Text("Archive") }
+            }
+            TextButton(onStats) { Text("Stats") }
+        }
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,

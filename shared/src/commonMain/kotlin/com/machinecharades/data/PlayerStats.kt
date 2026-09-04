@@ -42,6 +42,16 @@ data class PlayerStats(
     /** Rounds solved as a percentage, 0 when nothing has been played. */
     val solveRate: Int get() = if (played == 0) 0 else (solved * 100) / played
 
+    private val solvedClueLengths: List<Int>
+        get() = history.values.filter { it.solved }.map { it.clue.trim().length }
+
+    /** The shortest clue that has ever worked for you. Null before your first solve. */
+    val shortestClue: Int? get() = solvedClueLengths.minOrNull()
+
+    /** Mean clue length across your solved rounds. Null before your first solve. */
+    val averageClueChars: Int?
+        get() = solvedClueLengths.takeIf { it.isNotEmpty() }?.let { it.sum() / it.size }
+
     /**
      * Folds a finished round in.
      *

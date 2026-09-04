@@ -78,6 +78,27 @@ class PlayerStatsTest {
     }
 
     @Test
+    fun shortest_and_average_ignore_rounds_the_machine_never_solved() {
+        // A failed round still has a clue, but it is not evidence of a short
+        // clue that works — which is the only thing these two numbers claim.
+        val s = PlayerStats()
+            .recording(round(1, clue = "a very long clue indeed here"))          // 27, solved
+            .recording(round(2, solved = false, clue = "x"))                     // 1, failed
+            .recording(round(3, clue = "short one"))                             // 9, solved
+        assertEquals(9, s.shortestClue)
+        assertEquals(18, s.averageClueChars, "mean of 27 and 9, failures excluded")
+    }
+
+    @Test
+    fun shortest_and_average_are_absent_before_a_first_solve() {
+        assertNull(PlayerStats().shortestClue)
+        assertNull(PlayerStats().averageClueChars)
+        val onlyFailures = PlayerStats().recording(round(1, solved = false))
+        assertNull(onlyFailures.shortestClue)
+        assertNull(onlyFailures.averageClueChars)
+    }
+
+    @Test
     fun a_stored_round_is_recoverable_by_number() {
         val s = PlayerStats().recording(round(7, clue = "long spotty one"))
         assertNull(s.roundFor(6))
