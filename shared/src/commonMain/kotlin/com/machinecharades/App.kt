@@ -37,6 +37,7 @@ import com.machinecharades.core.MachineGuess
 import com.machinecharades.core.RoundResult
 import com.machinecharades.core.Scoring
 import com.machinecharades.data.Plan
+import com.machinecharades.data.Prefs
 import com.machinecharades.data.PlayerStats
 import com.machinecharades.data.PlayerStore
 import com.machinecharades.data.Plus
@@ -46,7 +47,9 @@ import com.machinecharades.net.GameApi
 import com.machinecharades.net.redactSecrets
 import com.machinecharades.ui.MachineCharadesTheme
 import com.machinecharades.ui.ArchiveScreen
+import com.machinecharades.ui.Cue
 import com.machinecharades.ui.Paywall
+import com.machinecharades.ui.rememberSoundCues
 import com.machinecharades.ui.StatsScreen
 import com.machinecharades.ui.MachineGreen
 import com.machinecharades.ui.MissRed
@@ -81,12 +84,14 @@ private sealed interface Phase {
 fun App(
     api: GameApi = remember { GameApi() },
     store: PlayerStore = remember { PlayerStore() },
+    prefs: Prefs = remember { Prefs() },
 ) {
     MachineCharadesTheme {
         var screen by remember { mutableStateOf<Screen>(Screen.Loading) }
         var stats by remember { mutableStateOf(PlayerStats()) }
         var reloads by remember { mutableIntStateOf(0) }
 
+        var soundOn by remember { mutableStateOf(prefs.soundOn) }
         var plus by remember { mutableStateOf(false) }
         var paywallOpen by remember { mutableStateOf(false) }
         var plans by remember { mutableStateOf<List<Plan>>(emptyList()) }
@@ -142,6 +147,7 @@ fun App(
                         api = api,
                         stats = stats,
                         plus = plus,
+                        soundOn = soundOn,
                         onWantPlus = { paywallOpen = true },
                         onArchive = { screen = Screen.Archive },
                         onStats = { screen = Screen.Stats },
@@ -177,6 +183,8 @@ fun App(
                     Screen.Stats -> StatsScreen(
                         stats = stats,
                         plus = plus,
+                        soundOn = soundOn,
+                        onSoundChange = { soundOn = it; prefs.soundOn = it },
                         onWantPlus = { paywallOpen = true },
                         onBack = { today?.let { screen = Screen.Playing(it) } },
                     )
@@ -262,6 +270,7 @@ private fun Round(
     api: GameApi,
     stats: PlayerStats,
     plus: Boolean,
+    soundOn: Boolean,
     onWantPlus: () -> Unit,
     onArchive: () -> Unit,
     onStats: () -> Unit,
@@ -422,7 +431,7 @@ private fun Round(
             is Phase.Done -> Unit
         }
 
-        GuessLog(guesses, thinking = phase is Phase.Thinking)
+        GuessLog(guesses, thinking = phase is Phase.Thinking, soundOn = soundOn)
 
         (phase as? Phase.Done)?.let { ResultCard(it.result) }
     }
@@ -538,18 +547,21 @@ private fun ClueEntry(
 
 /** The machine's attempts, in the order they landed. */
 @Composable
-private fun GuessLog(guesses: List<MachineGuess>, thinking: Boolean) {
+private fun GuessLog(guesses: List<MachineGuess>, thinking: Boolean, soundOn: Boolean) {
     if (guesses.isEmpty() && !thinking) return
 
-    // The answer arriving is the whole game. Mark it in the hand as well as on
-    // the screen — a hit and a miss should not feel the same.
+    // The answer arriving is the whole game. Mark it in the hand and in the ear
+    // as well as on the screen — a hit and a miss should not feel the same, and
+    // a phone flat on a desk gives nothing back from haptics alone.
     val haptics = LocalHapticFeedback.current
+    val cue = rememberSoundCues(enabled = soundOn)
     LaunchedEffect(guesses.size) {
         guesses.lastOrNull()?.let { latest ->
             haptics.performHapticFeedback(
                 if (latest.correct) HapticFeedbackType.LongPress
                 else HapticFeedbackType.TextHandleMove,
             )
+            cue(if (latest.correct) Cue.HIT else Cue.MISS)
         }
     }
 
