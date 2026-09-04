@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Two misses and the hit — the same three tiles the guess rows and the share
+    string use, so the icon says what the game is rather than decorating.
+
+    The dark tiles are lighter than the app's own surface colour on purpose. At
+    the size a launcher actually draws this, #2A313C disappeared into the
+    background and the mark read as a single green dot.
+
+    Far corner sits 30dp from centre, inside the 36dp an aggressive mask crops to.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="108dp"
+        android:height="108dp"
+        android:viewportWidth="108"
+        android:viewportHeight="108">
+    <path
+        android:fillColor="#3D4758"
+        android:pathData="M27.5,45.5 H36.5 A4.0,4.0 0 0 1 40.5,49.5 V58.5 A4.0,4.0 0 0 1 36.5,62.5 H27.5 A4.0,4.0 0 0 1 23.5,58.5 V49.5 A4.0,4.0 0 0 1 27.5,45.5 Z" />
+    <path
+        android:fillColor="#3D4758"
+        android:pathData="M49.5,45.5 H58.5 A4.0,4.0 0 0 1 62.5,49.5 V58.5 A4.0,4.0 0 0 1 58.5,62.5 H49.5 A4.0,4.0 0 0 1 45.5,58.5 V49.5 A4.0,4.0 0 0 1 49.5,45.5 Z" />
+    <path
+        android:fillColor="#4ADE80"
+        android:pathData="M71.5,45.5 H80.5 A4.0,4.0 0 0 1 84.5,49.5 V58.5 A4.0,4.0 0 0 1 80.5,62.5 H71.5 A4.0,4.0 0 0 1 67.5,58.5 V49.5 A4.0,4.0 0 0 1 71.5,45.5 Z" />
+</vector>
