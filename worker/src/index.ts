@@ -198,12 +198,32 @@ export async function handleToday(env: Env, url: URL): Promise<Response> {
   const puzzleRaw = await env.PUZZLES.get(`puzzle:${number}`);
   if (puzzleRaw === null) return json({ error: 'unknown_puzzle' }, 404);
 
-  return new Response(puzzleRaw, {
+  // Par travels with the puzzle so the player has a target while writing rather
+  // than a verdict afterwards. Measured, the machine solves a 60-character clue
+  // every time and a 15-character one about two thirds of the time — so "how
+  // short can you get" is the whole difficulty curve, and a number to aim at is
+  // worth more than any amount of encouragement to be brief.
+  const parRaw = await env.CACHE.get(parKey(number));
+  const body = parRaw === null
+    ? puzzleRaw
+    : (() => {
+        const stats = JSON.parse(parRaw) as ParStats;
+        return stats.n >= 2
+          ? JSON.stringify({
+              ...JSON.parse(puzzleRaw),
+              par: medianOf(stats),
+              best: stats.best,
+              solvers: stats.n,
+            })
+          : puzzleRaw;
+      })();
+
+  return new Response(body, {
     headers: {
       'content-type': 'application/json; charset=utf-8',
-      // Same answer for everyone all day, so let the edge serve it. Short
-      // enough that a fresh puzzle appears promptly after the UTC rollover.
-      'cache-control': 'public, max-age=300',
+      // Shorter than it was: the puzzle is fixed all day but par moves as people
+      // play, and a stale target is worse than none.
+      'cache-control': 'public, max-age=60',
     },
   });
 }

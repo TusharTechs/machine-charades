@@ -117,8 +117,33 @@ test('reports a missing index distinctly from a missing puzzle', async () => {
 });
 
 test('is edge-cacheable but only briefly', async () => {
+  // Was 300s when the response was a fixed puzzle document. It now carries par,
+  // which moves as people play, and a stale target is worse than none.
   const res = await get('/puzzle/today');
-  assert.match(res.headers.get('cache-control') ?? '', /max-age=300/);
+  assert.match(res.headers.get('cache-control') ?? '', /max-age=60/);
+});
+
+test('the puzzle carries par once a field exists to compare against', async () => {
+  const e = env({
+    CACHE: kv({
+      'par:7': JSON.stringify({ n: 4, best: 12, hist: { '12': 1, '18': 2, '40': 1 } }),
+    }),
+  });
+  const body = (await (await get('/puzzle/today', e)).json()) as Record<string, unknown>;
+  assert.equal(body.par, 18);
+  assert.equal(body.best, 12);
+  assert.equal(body.solvers, 4);
+});
+
+test('the puzzle omits par from a single solve', async () => {
+  // One person's score handed back as "par" reads as a comparison and is not
+  // one. Below two solvers the field is simply absent.
+  const e = env({
+    CACHE: kv({ 'par:7': JSON.stringify({ n: 1, best: 22, hist: { '22': 1 } }) }),
+  });
+  const body = (await (await get('/puzzle/today', e)).json()) as Record<string, unknown>;
+  assert.equal(body.par, undefined);
+  assert.equal(body.word, 'giraffe');
 });
 
 test('the dev puzzle override is inert without ALLOW_UNVERIFIED', async () => {
