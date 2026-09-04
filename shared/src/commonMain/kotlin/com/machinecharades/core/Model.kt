@@ -32,7 +32,20 @@ data class DailyPuzzle(
     /** Optional flavour category shown under the word ("animal", "kitchen"). */
     @SerialName("cat") val category: String? = null,
     /** Difficulty 1..5, from the generator's own solve simulation. */
-    @SerialName("diff") val difficulty: Int = 3,
+    @SerialName("diff") val difficulty: Int = 3,    /**
+     * Median clue length among everyone who has solved this one, once there are
+     * at least two of them. Absent on a puzzle nobody has finished.
+     *
+     * EncodeDefault.NEVER so a puzzle without par serialises exactly as it did
+     * before par existed — WireFormatTest keeps meaning what it meant, and the
+     * generated schedule documents stay byte-identical.
+     */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("par") val par: Int? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("best") val best: Int? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("solvers") val solvers: Int = 0,
 )
 
 /** Extra restriction on top of the banned list, unlocked by wordcraft rating. */

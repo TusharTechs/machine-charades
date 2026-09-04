@@ -411,6 +411,7 @@ private fun Round(
 
         when (val p = phase) {
             Phase.Writing -> ClueEntry(
+                par = puzzle.par?.takeIf { puzzle.solvers >= 2 },
                 clue = clue,
                 rejection = rejection?.message(),
                 error = submitError,
@@ -466,6 +467,8 @@ private fun ClueEntry(
     clue: String,
     rejection: String?,
     error: String?,
+    /** Today's median winning length, or null before two people have solved it. */
+    par: Int?,
     onClue: (String) -> Unit,
     onSend: () -> Unit,
 ) {
@@ -495,17 +498,25 @@ private fun ClueEntry(
                 // The bonus, live. The raw "n / 120" this replaced was actively
                 // misleading: 120 is only the hard cap, while every point of
                 // brevity is already gone by 60.
+                // Par is the target, not the 60-character allowance. Measured,
+                // the machine solves a 60-character clue every time — so
+                // "under 60" rewards you for clearing a bar that isn't there.
+                // What everyone else spent is a real number to beat.
                 val used = clue.trim().length
                 val bonus = Scoring.brevityBonus(used)
+                val beatingPar = par != null && used in 1..par
                 Text(
                     text = rejection ?: when {
-                        used == 0 -> "Under ${Scoring.CHAR_ALLOWANCE} characters earns a bonus."
+                        par != null && used == 0 -> "Par is $par characters."
+                        par != null && beatingPar -> "$used chars  ·  ${par - used} under par"
+                        par != null -> "$used chars  ·  par is $par"
+                        used == 0 -> "The shortest clue that works wins."
                         bonus > 0 -> "$used chars  ·  +$bonus bonus"
-                        else -> "$used chars  ·  no bonus past ${Scoring.CHAR_ALLOWANCE}"
+                        else -> "$used chars"
                     },
                     color = when {
                         rejection != null -> MaterialTheme.colorScheme.error
-                        bonus > 0 -> MachineGreen
+                        beatingPar || (par == null && bonus > 0) -> MachineGreen
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
                 )
