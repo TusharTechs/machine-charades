@@ -160,5 +160,13 @@ same assertions rather than assumed to behave.
 
 ---
 
+## Licence
+
+**Source available, not open source.** The code is published so it can be read and
+discussed; it is not licensed for reuse. Copyright is retained in full — see
+[LICENSE](LICENSE).
+
+---
+
 Built for [Shipaton 2026](https://shipaton.revenuecat.com). Subscriptions by RevenueCat, API on
 Cloudflare Workers, guesses by Gemini.

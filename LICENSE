@@ -1,0 +1,50 @@
+Machine Charades
+Copyright (c) 2026 Tushar Agarwal (TechTush Games). All rights reserved.
+
+This source code is made publicly readable for transparency, evaluation, and
+discussion. It is NOT open source, and publication here grants no licence to
+use it.
+
+PERMITTED
+
+  You may read this source code, and you may quote short excerpts of it for
+  the purposes of commentary, review, teaching, or reporting, with attribution.
+
+  You may fork this repository on GitHub, to the extent GitHub's Terms of
+  Service require that of every public repository. Such a fork carries no
+  additional rights beyond those granted above.
+
+NOT PERMITTED
+
+  Without prior written permission from the copyright holder, you may not:
+
+  - copy, reproduce, or redistribute this software, in source or binary form;
+  - modify it, or create derivative works from it;
+  - use it, in whole or in part, in any other product, whether commercial or
+    non-commercial;
+  - publish or distribute an application derived from it, including to any
+    application store;
+  - use its name, logo, icon, artwork, puzzle content, or store listing
+    material.
+
+  "Machine Charades" and the three-tile mark are used as trade marks of the
+  copyright holder, and no right to use them is granted by this licence.
+
+THIRD-PARTY COMPONENTS
+
+  This project depends on third-party software (including Kotlin, Compose
+  Multiplatform, Ktor, and the RevenueCat SDK) which remains governed by the
+  licences of its respective owners. Nothing in this licence applies to, or
+  purports to modify, those components.
+
+NO WARRANTY
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+For permission to use this code, contact the copyright holder through
+https://github.com/TusharTechs
