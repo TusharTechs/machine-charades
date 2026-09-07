@@ -37,3 +37,8 @@ xcuserdata
 captures
 .externalNativeBuild
 .cxx
+
+# App Store Connect private keys. The In-App Purchase key (SubscriptionKey_*.p8)
+# authorises RevenueCat to read transactions; Apple issues it once and never
+# lets you download it again. It lives outside the repo, like the .jks.
+*.p8
