@@ -580,6 +580,16 @@ private fun GuessLog(guesses: List<MachineGuess>, thinking: Boolean, soundOn: Bo
         Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        // Names what the list is. Without it a player reads three loose words
+        // and has to infer that these are the machine's attempts at their clue
+        // — which is exactly the confusion the intro screen exists to prevent.
+        if (guesses.isNotEmpty()) {
+            Text(
+                "IT HEARD",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         guesses.forEachIndexed { i, g ->
             // Starts false and is flipped on first composition, so the row
             // actually animates in. `visible = true` never transitions, which
@@ -640,7 +650,6 @@ private fun ThinkingRow() {
 
 @Composable
 private fun GuessRow(index: Int, guess: MachineGuess) {
-    val tint = if (guess.correct) MachineGreen else MissRed
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surface,
@@ -650,24 +659,27 @@ private fun GuessRow(index: Int, guess: MachineGuess) {
             Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // The attempt number, not a verdict. Three identical red squares
+            // said "wrong" three times and nothing else; the word beside them
+            // was already saying something far more useful.
             Text(
-                if (guess.correct) "🟩" else "🟥",
-                fontSize = 18.sp,
+                "$index",
+                Modifier.width(22.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     guess.guess.uppercase(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = tint,
-                )
-                Text(
-                    "guess $index of $MAX_GUESSES",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    // Green earns emphasis because it ends the round. A miss is
+                    // evidence, not an error, so it reads in the ordinary text
+                    // colour: what the clue actually conveyed, stated plainly.
+                    color = if (guess.correct) MachineGreen else MaterialTheme.colorScheme.onSurface,
                 )
             }
+            if (guess.correct) Text("🟩", fontSize = 16.sp)
         }
     }
 }
