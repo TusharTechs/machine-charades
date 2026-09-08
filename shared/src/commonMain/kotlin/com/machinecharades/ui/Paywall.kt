@@ -1,6 +1,6 @@
 package com.machinecharades.ui
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -145,17 +147,31 @@ private fun Perk(title: String, detail: String) {
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // Drawn, not the 🟩 emoji. An emoji renders differently on every
-        // platform and OS version, and this one is already spoken for: on the
-        // round screen a green square means the machine got it. Spending that
-        // mark on bullet points cheapens it in the place it matters.
+        // A tick, drawn rather than set in a font.
         //
-        // The shape is the app icon's tile, at bullet size.
-        Box(
-            Modifier.padding(top = 5.dp)
-                .size(10.dp)
-                .background(MachineGreen, RoundedCornerShape(3.dp)),
-        )
+        // This was 🟩 and then a green square, and a square is the wrong
+        // answer to the question a feature list is asked: not "is there a
+        // marker here" but "do I get this". A tick says yes. It also stops
+        // competing with the green square on the round screen, where the mark
+        // means the machine got the word and should mean only that.
+        Canvas(Modifier.padding(top = 6.dp).size(12.dp)) {
+            val w = size.width
+            val stroke = w * 0.18f
+            drawLine(
+                color = MachineGreen,
+                start = Offset(w * 0.08f, w * 0.52f),
+                end = Offset(w * 0.38f, w * 0.82f),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round,
+            )
+            drawLine(
+                color = MachineGreen,
+                start = Offset(w * 0.38f, w * 0.82f),
+                end = Offset(w * 0.92f, w * 0.20f),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round,
+            )
+        }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Text(
