@@ -1,5 +1,6 @@
 package com.machinecharades.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -144,7 +145,17 @@ private fun Perk(title: String, detail: String) {
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("🟩", fontSize = 15.sp, modifier = Modifier.padding(top = 2.dp))
+        // Drawn, not the 🟩 emoji. An emoji renders differently on every
+        // platform and OS version, and this one is already spoken for: on the
+        // round screen a green square means the machine got it. Spending that
+        // mark on bullet points cheapens it in the place it matters.
+        //
+        // The shape is the app icon's tile, at bullet size.
+        Box(
+            Modifier.padding(top = 5.dp)
+                .size(10.dp)
+                .background(MachineGreen, RoundedCornerShape(3.dp)),
+        )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Text(
