@@ -8,11 +8,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.machinecharades.data.Plan
+
+/**
+ * App Review guideline 3.1.2 requires an app selling auto-renewable
+ * subscriptions to carry the title, length, price, and functional links to
+ * both the terms and the privacy policy *inside the binary* — the store
+ * listing alone is not enough. The first three were already here; these are
+ * the links.
+ */
+private const val TERMS_URL =
+    "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+private const val PRIVACY_URL =
+    "https://tushartechs.github.io/machine-charades/privacy.html"
 
 /**
  * The Plus paywall.
@@ -111,6 +124,16 @@ fun Paywall(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
+
+            val uriHandler = LocalUriHandler.current
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton({ uriHandler.openUri(TERMS_URL) }) {
+                    Text("Terms of Use", style = MaterialTheme.typography.bodySmall)
+                }
+                TextButton({ uriHandler.openUri(PRIVACY_URL) }) {
+                    Text("Privacy Policy", style = MaterialTheme.typography.bodySmall)
+                }
+            }
         }
     }
 }

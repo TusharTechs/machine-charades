@@ -16,7 +16,7 @@ PRODUCT_BUNDLE_IDENTIFIER=com.techtush.machinecharades
 // when nothing else changed. Override without editing this file:
 //   xcodebuild ... CURRENT_PROJECT_VERSION=2
 // MARKETING_VERSION is the number humans see and only moves on a real release.
-CURRENT_PROJECT_VERSION=1
+CURRENT_PROJECT_VERSION=2
 MARKETING_VERSION=1.0
 
 // Android shows "Machine Charades" via app_name; match it on the Home screen.
