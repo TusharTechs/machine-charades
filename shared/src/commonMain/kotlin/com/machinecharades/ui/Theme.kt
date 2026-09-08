@@ -6,8 +6,13 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import machinecharades.shared.generated.resources.Res
+import machinecharades.shared.generated.resources.jetbrains_mono
+import org.jetbrains.compose.resources.Font
 
 /**
  * One fixed dark theme, deliberately not following the system.
@@ -38,21 +43,49 @@ private val Scheme = darkColorScheme(
     outline = Color(0xFF2C333E),
 )
 
-private val Type = Typography().let { base ->
+/**
+ * The machine's voice.
+ *
+ * The same face the landing page uses for its labels, now bundled so the app
+ * stops looking like whatever the OS happened to ship — SF Pro on one
+ * platform, Roboto on the other, neither of them the brand. A word game about
+ * making a machine understand you has some business being set in a machine's
+ * typeface.
+ *
+ * Prose stays on the system font, which is what the site does too: monospace
+ * is superb for a word, a counter or a label and tiring for a paragraph.
+ */
+@Composable
+private fun machineFont() = FontFamily(Font(Res.font.jetbrains_mono))
+
+private fun typographyWith(mono: FontFamily) = Typography().let { base ->
     base.copy(
         // The secret word is the hero of the screen; everything else is chrome.
         displayMedium = base.displayMedium.copy(
+            fontFamily = mono,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
         ),
-        labelLarge = base.labelLarge.copy(letterSpacing = 1.2.sp),
+        // Every label, eyebrow and counter: BLOCKED TODAY, MACHINE CHARADES #6,
+        // IT HEARD, the guess numbers. These are the machine's own annotations
+        // on the screen, and they read as such in mono.
+        labelSmall = base.labelSmall.copy(fontFamily = mono, letterSpacing = 1.4.sp),
+        labelMedium = base.labelMedium.copy(fontFamily = mono, letterSpacing = 1.2.sp),
+        labelLarge = base.labelLarge.copy(fontFamily = mono, letterSpacing = 1.2.sp),
+        // The guessed word and the score: things the machine produced.
+        titleMedium = base.titleMedium.copy(fontFamily = mono, letterSpacing = 0.5.sp),
+        headlineMedium = base.headlineMedium.copy(fontFamily = mono, fontWeight = FontWeight.Bold),
     )
 }
 
 @Composable
 fun MachineCharadesTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = Scheme, typography = Type, content = content)
+    MaterialTheme(
+        colorScheme = Scheme,
+        typography = typographyWith(machineFont()),
+        content = content,
+    )
 }
 
-/** Monospaced-feeling label for puzzle numbers and counters. */
+/** Puzzle numbers and counters. Actually monospaced now, rather than feeling it. */
 val CounterStyle = TextStyle(fontWeight = FontWeight.Medium, letterSpacing = 1.5.sp)
