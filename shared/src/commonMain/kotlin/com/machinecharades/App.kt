@@ -49,6 +49,7 @@ import com.machinecharades.ui.MachineCharadesTheme
 import com.machinecharades.ui.ArchiveScreen
 import com.machinecharades.ui.Cue
 import com.machinecharades.ui.Paywall
+import com.machinecharades.ui.DailyReminderEffect
 import com.machinecharades.ui.Intro
 import com.machinecharades.ui.rememberSoundCues
 import com.machinecharades.ui.StatsScreen
@@ -94,6 +95,8 @@ fun App(
 
         var soundOn by remember { mutableStateOf(prefs.soundOn) }
         var introDone by remember { mutableStateOf(prefs.hasSeenIntro) }
+        var remindersOn by remember { mutableStateOf(prefs.remindersOn) }
+        var askReminders by remember { mutableStateOf(false) }
         var plus by remember { mutableStateOf(false) }
         var paywallOpen by remember { mutableStateOf(false) }
         var plans by remember { mutableStateOf<List<Plan>>(emptyList()) }
@@ -136,6 +139,10 @@ fun App(
             }
         }
 
+        // Reschedules whenever the preference changes and on every launch,
+        // which also repairs an alarm the OS dropped after a reboot.
+        DailyReminderEffect(enabled = remindersOn)
+
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Box(
                 Modifier.safeContentPadding().fillMaxSize().padding(horizontal = 24.dp),
@@ -169,6 +176,14 @@ fun App(
                         },
                     ) { finished ->
                         stats = stats.recording(finished).also(store::save)
+                        // Asked here and nowhere else: a player who has just
+                        // watched the machine get their clue has a streak worth
+                        // protecting, which a stranger on first launch does not.
+                        // Opt-in roughly doubles when the prompt waits for that.
+                        if (finished.solved && !prefs.hasAskedReminders) {
+                            prefs.hasAskedReminders = true
+                            askReminders = true
+                        }
                     }
 
                     Screen.Archive -> ArchiveScreen(
@@ -196,8 +211,36 @@ fun App(
                         plus = plus,
                         soundOn = soundOn,
                         onSoundChange = { soundOn = it; prefs.soundOn = it },
+                        remindersOn = remindersOn,
+                        onRemindersChange = { remindersOn = it; prefs.remindersOn = it },
                         onWantPlus = { paywallOpen = true },
                         onBack = { today?.let { screen = Screen.Playing(it) } },
+                    )
+                }
+
+                // Offered once, right after a first win. Two buttons and no
+                // dark pattern: "No thanks" is a real answer, and the toggle
+                // in Stats is there for anyone who changes their mind.
+                if (askReminders) {
+                    AlertDialog(
+                        onDismissRequest = { askReminders = false },
+                        title = { Text("Keep the streak going?") },
+                        text = {
+                            Text(
+                                "One nudge at 9am when the new word is up. " +
+                                    "Nothing else, ever — and you can turn it off in Stats.",
+                            )
+                        },
+                        confirmButton = {
+                            TextButton({
+                                remindersOn = true
+                                prefs.remindersOn = true
+                                askReminders = false
+                            }) { Text("Remind me") }
+                        },
+                        dismissButton = {
+                            TextButton({ askReminders = false }) { Text("No thanks") }
+                        },
                     )
                 }
 

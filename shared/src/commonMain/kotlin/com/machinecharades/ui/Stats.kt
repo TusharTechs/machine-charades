@@ -28,6 +28,8 @@ fun StatsScreen(
     plus: Boolean,
     soundOn: Boolean,
     onSoundChange: (Boolean) -> Unit,
+    remindersOn: Boolean,
+    onRemindersChange: (Boolean) -> Unit,
     onWantPlus: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -62,6 +64,15 @@ fun StatsScreen(
         ) {
             Text("Sound", style = MaterialTheme.typography.bodyLarge)
             Switch(checked = soundOn, onCheckedChange = onSoundChange)
+        }
+
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Daily reminder", style = MaterialTheme.typography.bodyLarge)
+            Switch(checked = remindersOn, onCheckedChange = onRemindersChange)
         }
 
         if (Plus.unlocked(plus)) {

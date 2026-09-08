@@ -25,9 +25,28 @@ class Prefs(private val storage: Storage = platformStorage()) {
         get() = storage.get(KEY_INTRO) == ON
         set(value) = storage.put(KEY_INTRO, if (value) ON else OFF)
 
+    /**
+     * Whether the daily reminder is scheduled.
+     *
+     * Defaults off, unlike sound. A notification you did not ask for is a very
+     * different imposition from a sound you did not ask for, and the OS
+     * permission prompt is a one-shot: spending it before a player has any
+     * reason to want the reminder wastes it.
+     */
+    var remindersOn: Boolean
+        get() = storage.get(KEY_REMIND) == ON
+        set(value) = storage.put(KEY_REMIND, if (value) ON else OFF)
+
+    /** Whether the reminder has been offered, so it is offered exactly once. */
+    var hasAskedReminders: Boolean
+        get() = storage.get(KEY_REMIND_ASKED) == ON
+        set(value) = storage.put(KEY_REMIND_ASKED, if (value) ON else OFF)
+
     private companion object {
         const val KEY_SOUND = "sound"
         const val KEY_INTRO = "intro"
+        const val KEY_REMIND = "remind"
+        const val KEY_REMIND_ASKED = "remind_asked"
         const val ON = "on"
         const val OFF = "off"
     }

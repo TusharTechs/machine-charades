@@ -32,19 +32,19 @@ score means something. Beating par is the game.
 ## Why this is a Kotlin Multiplatform project
 
 Not "Kotlin for the logic, native for the UI". **The entire app is shared Kotlin**, including
-every screen, and the platform layer is five files.
+every screen, and the platform layer is six files.
 
 ```
-shared/src/commonMain     2,323 lines    game, UI, networking, billing, persistence
-shared/src/androidMain      103 lines    5 actuals
-shared/src/iosMain           57 lines    5 actuals
+shared/src/commonMain     2,873 lines    game, UI, networking, billing, persistence
+shared/src/androidMain      297 lines    6 actuals
+shared/src/iosMain          165 lines    6 actuals
 iosApp/*.swift               28 lines    the entry point, and nothing else
 ```
 
-Around 94% of the codebase is written once. There is no SwiftUI in this project beyond the
+Around 86% of the codebase is written once. There is no SwiftUI in this project beyond the
 28-line host that presents the Compose view.
 
-### The five things that genuinely differ
+### The six things that genuinely differ
 
 | `expect` | Android | iOS |
 |---|---|---|
@@ -53,6 +53,7 @@ Around 94% of the codebase is written once. There is no SwiftUI in this project 
 | `platformHttpClient()` | Ktor OkHttp engine | Ktor Darwin engine |
 | `storeApiKey` | RevenueCat Google key | RevenueCat Apple key |
 | `getPlatform()` | name + version | name + version |
+| `DailyReminderEffect()` | AlarmManager + a receiver | `UNUserNotificationCenter` |
 
 That's the whole list. Subscriptions are shared too — [`purchases-kmp`](https://github.com/RevenueCat/purchases-kmp)
 means entitlements, offerings and the purchase flow live in `commonMain` rather than being

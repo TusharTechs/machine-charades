@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The shared module declares the pieces its own Android code needs, so an app
+  that consumes it does not have to know that a daily reminder implies a
+  permission and a receiver.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Runtime permission from Android 13. Asked for only when a player turns
+         reminders on, never on launch. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <application>
+        <!-- Not exported: nothing outside the app has any business firing it. -->
+        <receiver
+                android:name="com.machinecharades.ui.ReminderReceiver"
+                android:exported="false"/>
+    </application>
+
+</manifest>
