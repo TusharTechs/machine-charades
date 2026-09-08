@@ -15,8 +15,19 @@ class Prefs(private val storage: Storage = platformStorage()) {
         get() = storage.get(KEY_SOUND) != OFF
         set(value) = storage.put(KEY_SOUND, if (value) ON else OFF)
 
+    /**
+     * Whether the first-run explainer has been shown.
+     *
+     * Defaults to false so an existing player who updates sees it once too —
+     * they were the ones who could not tell what the game wanted.
+     */
+    var hasSeenIntro: Boolean
+        get() = storage.get(KEY_INTRO) == ON
+        set(value) = storage.put(KEY_INTRO, if (value) ON else OFF)
+
     private companion object {
         const val KEY_SOUND = "sound"
+        const val KEY_INTRO = "intro"
         const val ON = "on"
         const val OFF = "off"
     }

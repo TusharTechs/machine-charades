@@ -49,6 +49,7 @@ import com.machinecharades.ui.MachineCharadesTheme
 import com.machinecharades.ui.ArchiveScreen
 import com.machinecharades.ui.Cue
 import com.machinecharades.ui.Paywall
+import com.machinecharades.ui.Intro
 import com.machinecharades.ui.rememberSoundCues
 import com.machinecharades.ui.StatsScreen
 import com.machinecharades.ui.MachineGreen
@@ -92,6 +93,7 @@ fun App(
         var reloads by remember { mutableIntStateOf(0) }
 
         var soundOn by remember { mutableStateOf(prefs.soundOn) }
+        var introDone by remember { mutableStateOf(prefs.hasSeenIntro) }
         var plus by remember { mutableStateOf(false) }
         var paywallOpen by remember { mutableStateOf(false) }
         var plans by remember { mutableStateOf<List<Plan>>(emptyList()) }
@@ -139,7 +141,16 @@ fun App(
                 Modifier.safeContentPadding().fillMaxSize().padding(horizontal = 24.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                when (val s = screen) {
+                // The explainer sits ahead of every other screen, Loading
+                // included: the rules do not depend on the network, so a
+                // first-time player can read them while today's puzzle is
+                // still in flight.
+                if (!introDone) {
+                    Intro {
+                        prefs.hasSeenIntro = true
+                        introDone = true
+                    }
+                } else when (val s = screen) {
                     Screen.Loading -> CircularProgressIndicator()
                     is Screen.Failed -> Failure(s.message) { reloads++ }
                     is Screen.Playing -> Round(
