@@ -82,6 +82,15 @@ private sealed interface Phase {
     data class Done(val result: RoundResult) : Phase
 }
 
+/**
+ * How wide the game is allowed to get.
+ *
+ * Roughly a large phone. Beyond this the layout stops gaining anything and
+ * starts costing readability, so tablets get a centred column rather than a
+ * stretched one.
+ */
+private val READING_WIDTH = 560.dp
+
 @Composable
 fun App(
     api: GameApi = remember { GameApi() },
@@ -148,6 +157,16 @@ fun App(
                 Modifier.safeContentPadding().fillMaxSize().padding(horizontal = 24.dp),
                 contentAlignment = Alignment.Center,
             ) {
+                // A phone-shaped column, centred, on anything wider than a
+                // phone. The game is one word, a text field and a button;
+                // letting that run the full width of an iPad does not use
+                // the space, it stretches a line of text to 1024pt and makes
+                // the reading eye travel. Every screen inherits this, so
+                // none of them has to know it is on a tablet.
+                Box(
+                    Modifier.widthIn(max = READING_WIDTH).fillMaxHeight(),
+                    contentAlignment = Alignment.Center,
+                ) {
                 // The explainer sits ahead of every other screen, Loading
                 // included: the rules do not depend on the network, so a
                 // first-time player can read them while today's puzzle is
@@ -272,6 +291,7 @@ fun App(
                         },
                         onDismiss = { paywallOpen = false; buyError = null },
                     )
+                }
                 }
             }
         }
