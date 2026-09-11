@@ -507,7 +507,7 @@ private fun Round(
 
         GuessLog(guesses, thinking = phase is Phase.Thinking, soundOn = soundOn)
 
-        (phase as? Phase.Done)?.let { ResultCard(it.result) }
+        (phase as? Phase.Done)?.let { ResultCard(it.result, plus, onWantPlus) }
     }
 }
 
@@ -748,7 +748,7 @@ private fun GuessRow(index: Int, guess: MachineGuess) {
 }
 
 @Composable
-private fun ResultCard(result: RoundResult) {
+private fun ResultCard(result: RoundResult, plus: Boolean, onWantPlus: () -> Unit) {
     val share = rememberShareAction()
 
     Surface(
@@ -826,6 +826,23 @@ private fun ResultCard(result: RoundResult) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            // The mode row is the main way into Plus, and it only exists
+            // before the day's puzzle is played — so once you have played,
+            // the offer vanished from the screen entirely until tomorrow.
+            // App Review hit exactly that: they played the round, then
+            // reported they could not locate the in-app purchases.
+            //
+            // It is also the right moment to ask. Someone who has just
+            // finished a round is the person most likely to want another.
+            if (!Plus.unlocked(plus)) {
+                TextButton(onWantPlus) {
+                    Text(
+                        "Want it harder? See Plus",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
         }
     }
 }
