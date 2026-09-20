@@ -7,20 +7,24 @@ explain it to a machine.
 
 Android and iOS, from one Kotlin Multiplatform codebase.
 
+**[Watch the demo (1:44)](https://youtube.com/shorts/CRBlALFE3kw)**
+&nbsp;·&nbsp; [Download on the App Store](https://apps.apple.com/app/machine-charades/id6809356797)
+&nbsp;·&nbsp; [Get it on Google Play](https://play.google.com/store/apps/details?id=com.techtush.machinecharades)
+
 ---
 
 ## The game
 
 You get a word. Say **GIRAFFE**. You write a clue, and the model gets three guesses.
 
-Five obvious words are blocked that day — *neck, tall, africa, zoo, spots* — and it catches
+Five obvious words are blocked that day (*neck, tall, africa, zoo, spots*), and it catches
 variations too, so `necked` and `spotty` don't slip past. You have to go around.
 
 The twist that emerged while building it: **the model is good.** It gets almost any fair clue
-on the first try. So the game isn't "can you make it guess" — it's *how few characters can you
+on the first try. So the game isn't "can you make it guess". It is *how few characters can you
 do it in.* `long yellow tree eater` works and scores 1190. Under twenty characters is hard.
 
-Every puzzle shows **par** — the median clue length among everyone who has solved it — so a
+Every puzzle shows **par**, the median clue length among everyone who has solved it, so a
 score means something. Beating par is the game.
 
 | | | | |
@@ -55,7 +59,7 @@ Around 86% of the codebase is written once. There is no SwiftUI in this project 
 | `getPlatform()` | name + version | name + version |
 | `DailyReminderEffect()` | AlarmManager + a receiver | `UNUserNotificationCenter` |
 
-That's the whole list. Subscriptions are shared too — [`purchases-kmp`](https://github.com/RevenueCat/purchases-kmp)
+That's the whole list. Subscriptions are shared too: [`purchases-kmp`](https://github.com/RevenueCat/purchases-kmp)
 means entitlements, offerings and the purchase flow live in `commonMain` rather than being
 written twice against `BillingClient` and `StoreKit`.
 
@@ -85,7 +89,7 @@ Compose Multiplatform UI  ──►  ClueValidator (Kotlin)      instant, local,
 
 **Puzzles are generated offline** and uploaded to KV, so a normal session costs nothing: every
 player on a given day reads the same pre-made document, and the only live model call is the
-guess. Guesses are cached by a hash of the normalised clue — players converge hard on the same
+guess. Guesses are cached by a hash of the normalised clue, and players converge hard on the same
 phrasings, so this runs at a high hit rate within days, and a hit returns in ~20ms instead of
 ~700ms.
 
@@ -94,9 +98,9 @@ flight, and dropped. Only the hash and the model's answer survive, for 14 days.
 
 **Nothing lets a player read ahead.** The puzzle number is resolved from a date index
 server-side and never taken from the request. The archive endpoint serves only puzzles whose
-scheduled date has already passed — today included, since today is played through
+scheduled date has already passed, today included, since today is played through
 `/puzzle/today` where one-round-a-day is enforced. There is a dev override to force a puzzle
-number, gated behind a flag no deployed Worker sets — and the test for it asserts that five
+number, gated behind a flag no deployed Worker sets, and the test for it asserts that five
 different smuggling shapes (`?n=8`, `?number=8`, `?n=8&n=7`, `?N=8`, `?n=%38`) all still
 resolve to today with the flag unset.
 
@@ -112,7 +116,7 @@ coincidence without a dictionary, so `light` rejects **delight**, `sting` reject
 `sand` rejects **sandwich**, and `wind` rejects **window**.
 
 A player experiences a false rejection as a bug in the game, not as a rule. So the false
-positive rate is measured rather than assumed — [`tools/probe-validator.mjs`](tools/probe-validator.mjs)
+positive rate is measured rather than assumed: [`tools/probe-validator.mjs`](tools/probe-validator.mjs)
 runs the real validator against the real puzzle set and prints every rejection to be judged by
 hand. Each of the four cases above was caught by that probe and is documented at the fix.
 
@@ -164,7 +168,7 @@ same assertions rather than assumed to behave.
 ## Licence
 
 **Source available, not open source.** The code is published so it can be read and
-discussed; it is not licensed for reuse. Copyright is retained in full — see
+discussed; it is not licensed for reuse. Copyright is retained in full. See
 [LICENSE](LICENSE).
 
 ---
