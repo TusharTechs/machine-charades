@@ -186,22 +186,54 @@ one, because the skill is compression.
 ## For the Build in Public Award
 
 ```
-Building in public forced the two changes that most improved the game.
+Three things in the shipped app exist because I built it in the open.
 
-The first came from a tester who said: "I didn't quite understand what I am
-typing and what the machine tries to guess." I had built and played the game
-for weeks and could no longer see that the premise was not obvious. That one
-sentence produced the first-run explainer, which is now the first thing anyone
-sees.
+A tester said: "I didn't quite understand what I am typing and what the machine
+tries to guess." I had built and played this for weeks and could no longer see
+that the premise was not obvious to anyone else. That one sentence produced the
+first-run explainer, which is now the first screen anyone sees. The fix was not
+more words, it was one worked example in four beats.
 
-The second was accountability during two App Store rejections. Posting about a
-rejection publicly, including the one that was entirely my own fault (my review
-note pointed reviewers at a control that only renders during one phase of the
-game), made me diagnose it properly and write down the cause rather than just
-resubmit and hope.
+A Pixel 6a tester on Android 16 wrote up a full first session, unprompted and in
+detail: puzzle 1, GIRAFFE, blocked words neck, tall, africa, zoo and spots. He
+sent "Savanna browser that reaches treetop leaves" and the machine got it on the
+first guess for 1085 points. Then the part that mattered: "It is one puzzle a
+day, so I finished everything the app has in about two minutes and the next
+screen just says come back tomorrow. If you want testers actually opening it
+across the full 14 days, an archive of past puzzles or a practice mode would
+give people a reason to come back."
 
-[ADD YOUR POST LINKS HERE]
+That was the most useful sentence anyone sent me, for a reason he could not have
+known. The archive already existed. It was behind Plus. A tester who had never
+seen the paywall independently asked for the exact feature I had chosen to put
+behind it, which is about as clean a validation of a monetisation decision as
+you can get without a conversion number.
+
+It also converged with something else. Days later, App Review rejected the app
+under 2.1(b) because they could not locate the in-app purchases, and the cause
+was that the route into Plus only rendered while you were still writing a clue.
+A paying reviewer and a free tester had independently hit the same gap: once the
+round is over, there is nothing on screen. One fix answered both, and I would
+not have recognised it as one problem if the tester had not written that
+paragraph first.
+
+Posting the rejections publicly, including the one that was entirely my own
+fault, is what made me diagnose them properly rather than resubmit and hope.
+It is harder to wave away a mistake you have already described to people.
 ```
+
+**Links, with what each one covers:**
+
+| Date | Link | What was happening in the project |
+|---|---|---|
+| 4 Sep 2026 | `https://x.com/TusharA5649881/status/2095913012893024531?s=20` | First Shipaton post. Same day the measurement landed and par moved from 60 characters to 30, and the archive, stats and fail-open billing were all built. |
+| 8 Sep 2026 | `https://x.com/TusharA5649881/status/2097347780763369807?s=20` | The day the first-run explainer shipped, from the tester quote above, alongside the fix for the 3.1.2 rejection (subscription terms inside the paywall). |
+| 11 Sep 2026 | `https://x.com/TusharA5649881/status/2098461179257766121?s=20` | The second App Store rejection, 2.1(b), and the fix: keeping a way into Plus on screen after the round is played. |
+| 15 Sep 2026 | `https://x.com/TusharA5649881/status/2099712892413345825?s=20` | Launch day on the App Store. |
+
+> Dates are decoded from the post IDs and matched against the commit log, so
+> they are accurate. Check the one-line summaries match what each post actually
+> says before pasting, since X blocks reading them without an account.
 
 ---
 
