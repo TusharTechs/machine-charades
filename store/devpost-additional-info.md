@@ -13,8 +13,8 @@
 |---|---|
 | First version released on a store between 1 Aug and 30 Sep 2026 | **Yes.** First public release was on the App Store in September 2026. |
 | Employee of RevenueCat or a Shipaton sponsor | **No** |
-| What type of app did you build | **iOS (iPhone and iPad)** and **Android** |
-| iOS App Store URL | `https://apps.apple.com/app/machine-charades/id6809356797` |
+| What type of app did you build | **iOS (iPhone and iPad)**, **Mac**, and **Android**. The iOS build runs on Apple Silicon Macs from the Mac App Store and was verified there: the reading-width cap keeps the layout correct in a resizable window. |
+| iOS or Mac App Store URL | `https://apps.apple.com/app/machine-charades/id6809356797` (one field covers both) |
 | Google Play URL | `https://play.google.com/store/apps/details?id=com.techtush.machinecharades` |
 | Samsung Galaxy Store URL | *leave blank* |
 | Next Gen repo / student email / consent | *leave blank, not a Next Gen entry* |
